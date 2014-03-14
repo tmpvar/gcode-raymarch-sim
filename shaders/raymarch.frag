@@ -28,7 +28,7 @@ float get_depth(int x, int y) {
 */
 
 
-vec3 cutterPosition = vec3(0, 0.125, .4);
+vec3 cutterPosition = vec3(0, 0.25, .2);
 float cutterRadius = .15;
 
 float solid_plane(vec3 p) {
@@ -70,7 +70,7 @@ float op_intersect( float d1, float d2 ) {
 vec2 map(in vec3 pos) {
   float box = solid_box(pos-vec3(0.0,0.05, 0.0), vec3(.5, .1, .5));
   float cyl = solid_capsule(pos-cutterPosition, vec3(.0, .0, 0.01), vec3(.0, .5, 0.01), cutterRadius);
-  vec2 res = vec2(op_subtract(cyl, box), box);
+  vec2 res = vec2(op_union(cyl, box), box);
   return res;
 }
 
@@ -157,7 +157,7 @@ void main(void)
 
 
   // camera
-  vec3 ro = vec3( -0.5+3.2*cos(0.1*time + 6.0*mo.x), 1.0 + 2.0*mo.y, 0.5 + 3.2*sin(0.1*time + 6.0*mo.x) );
+  vec3 ro = vec3(2.0, 0.5, -0.5);//vec3( -0.5+3.2*cos(0.1*time + 6.0*mo.x), 1.0 + 2.0*mo.y, 0.5 + 3.2*sin(0.1*time + 6.0*mo.x) );
   vec3 ta = vec3( -0.5, -0.4, 0.5 );
 
   // camera tx
