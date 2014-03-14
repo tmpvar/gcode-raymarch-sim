@@ -1,1 +1,10 @@
-{}
+{
+  "scripts" : {
+    "dev" : "beefy ./index.js:bundle.js --live --open -- -t glslify",
+    "build" : "browserify index.js -o bundle.js -t glslify"
+  },
+  "dependencies": {
+    "gl-now": "~1.0.0",
+    "glslify": "~1.2.1"
+  }
+}
