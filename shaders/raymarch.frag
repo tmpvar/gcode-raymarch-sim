@@ -1,35 +1,24 @@
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 
 #define M_PI 3.141593
-#define RAYMARCH_CYCLES 64
-
+#define RAYMARCH_CYCLES 128
 
 uniform float time;
+uniform float depth_stride;
 uniform vec2 mouse;
 uniform vec2 resolution;
-
-/*
-// TODO: since accessing an array needs to be a const expression
-//       the array needs to be a texture or some such.
-//       http://stackoverflow.com/questions/19755973/using-an-array-in-glsl-shaders-in-webgl
-
-const int width = 100;
-const int height = 100;
-float depth[width * height];
-
-float get_depth(int x, int y) {
-  int start = y*width + x;
-  for (int i = 0; i<100; i++) {
-    return depth[i];
-  }
-}
-*/
-
+uniform sampler2D depth;
 
 vec3 cutterPosition = vec3(0, 0.25, .2);
 float cutterRadius = .15;
+
+
+float depth_get(in vec2 uv) {
+  uv *= vec2(512.0, 512.0);
+  return texture2D(depth, abs(uv)).x;
+}
 
 float solid_plane(vec3 p) {
   return p.y;
@@ -41,8 +30,7 @@ float solid_sphere(vec3 p, float s) {
 
 float solid_box(vec3 p, vec3 b) {
   vec3 d = abs(p) - b;
-  return min(max(d.x,max(d.y,d.z)),0.0) +
-         length(max(d,0.0));
+  return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -68,10 +56,32 @@ float op_intersect( float d1, float d2 ) {
 }
 
 vec2 map(in vec3 pos) {
-  float box = solid_box(pos-vec3(0.0,0.05, 0.0), vec3(.5, .1, .5));
-  float cyl = solid_capsule(pos-cutterPosition, vec3(.0, .0, 0.01), vec3(.0, .5, 0.01), cutterRadius);
-  vec2 res = vec2(op_union(cyl, box), box);
-  return res;
+  float box = solid_box(
+    pos-vec3(0.0,0.05, 0.0),
+    vec3(.5, .1, .5)
+  );
+
+  float cyl = solid_capsule(
+    pos-cutterPosition,
+    vec3(.0, .0, 0.01),
+    vec3(.0, .5, 0.01),
+    cutterRadius
+  );
+
+  float result = op_union(cyl, box);
+  // result = max(result, 0.0);
+
+
+  vec2 ret = vec2(
+    op_subtract(
+      solid_box(
+        pos - vec3(0.0, .15 + depth_get(pos.xy)/2.0, 0.0),
+        vec3(0.1, depth_get(pos.xy), 0.1)
+      ),
+      result
+    ), 1.0);
+
+  return ret;
 }
 
 vec3 calcNormal(in vec3 pos) {
@@ -157,8 +167,14 @@ void main(void)
 
 
   // camera
-  vec3 ro = vec3(2.0, 0.5, -0.5);//vec3( -0.5+3.2*cos(0.1*time + 6.0*mo.x), 1.0 + 2.0*mo.y, 0.5 + 3.2*sin(0.1*time + 6.0*mo.x) );
-  vec3 ta = vec3( -0.5, -0.4, 0.5 );
+  //vec3 ro = vec3(2.0, 0.5, -0.5);//vec3( -0.5+3.2*cos(0.1*time + 6.0*mo.x), 1.0 + 2.0*mo.y, 0.5 + 3.2*sin(0.1*time + 6.0*mo.x) );
+  vec3 ro = vec3(
+    -1.0+3.2*cos(0.1*time + 6.0*mo.x),
+    1.0 + 3.0*mo.y,
+    -1.0 + 3.2*sin(0.1*time + 6.0*mo.x)
+  );
+
+  vec3 ta = vec3(0.0, 0.0, 0.0);//vec3( -0.5, -0.2, 0.5 );
 
   // camera tx
   vec3 cw = normalize( ta-ro );
@@ -172,7 +188,11 @@ void main(void)
 
   vec3 col = render( ro, rd );
 
-  col = sqrt( col );
+  // if (depth_get(q) < 0.0) {
+  //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+  // } else {
+    col = sqrt( col );
 
-  gl_FragColor = vec4( col, 1.0 );
+    gl_FragColor = vec4( col, 1.0);
+  //}
 }

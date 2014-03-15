@@ -6,6 +6,7 @@
   "dependencies": {
     "gl-now": "~1.0.0",
     "glslify": "~1.2.1",
-    "ndarray": "~1.0.10"
+    "ndarray": "~1.0.10",
+    "gl-texture2d": "~0.1.11"
   }
 }
