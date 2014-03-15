@@ -45,8 +45,16 @@ shell.on('gl-init', function() {
   this.depthArray = ndarray(new Float32Array(width*height), [width, height]);
 
   ndfill(this.depthArray.lo(0, 0).hi(2048, 2048), function(i, j) {
-    return 0.05;
+    return .1;
   });
+
+
+  ndfill(this.depthArray.lo(0, 0).hi(512, 512), function(i, j) {
+    return 1;
+  });
+  // ndfill(this.depthArray.lo(2048-128, 2048-128).hi(2048, 2048), function(i, j) {
+  //   return 1;
+  // });
 
   this.depthTexture = createTexture(gl, this.depthArray);
 

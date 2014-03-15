@@ -1,5 +1,5 @@
 #ifdef GL_ES
-precision highp float;
+precision lowp float;
 #endif
 
 #define M_PI 3.141593
@@ -16,8 +16,8 @@ float cutterRadius = .15;
 
 
 float depth_get(in vec2 uv) {
-  uv *= vec2(512.0, 512.0);
-  return texture2D(depth, abs(uv)).x;
+//  uv /= vec2(512.0, 512.0);
+  return texture2D(depth, uv*512.0).x;
 }
 
 float solid_plane(vec3 p) {
@@ -31,6 +31,11 @@ float solid_sphere(vec3 p, float s) {
 float solid_box(vec3 p, vec3 b) {
   vec3 d = abs(p) - b;
   return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
+}
+
+
+float solid_depthmap(vec3 p) {
+  return length(p.y - (1.0 - depth_get(p.xz))) - p.y;
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -55,9 +60,12 @@ float op_intersect( float d1, float d2 ) {
   return max(d1, d2);
 }
 
-vec2 map(in vec3 pos) {
+vec2 map(in vec3 origin, in vec3 dir, in float amount) {
+
+  vec3 pos = origin + dir * amount;
+
   float box = solid_box(
-    pos-vec3(0.0,0.05, 0.0),
+    pos - vec3(0.0,0.05, 0.0),
     vec3(.5, .1, .5)
   );
 
@@ -68,45 +76,52 @@ vec2 map(in vec3 pos) {
     cutterRadius
   );
 
-  float result = op_union(cyl, box);
-  // result = max(result, 0.0);
+  // float scale = 1.0;//20.0;
+  // float resize = 1.23;
+  // float ret = op_union(
+  //   box,
+  //   length(pos.y - (1.0 - depth_get(pos.xy))) - pos.y
+  // );
 
+  //float v = length(pos/2.0 - vec3(0.0, 1.0 - depth_get(pos.xz), 0.0));
 
-  vec2 ret = vec2(
-    op_subtract(
-      solid_box(
-        pos - vec3(0.0, .15 + depth_get(pos.xy)/2.0, 0.0),
-        vec3(0.1, depth_get(pos.xy), 0.1)
-      ),
-      result
-    ), 1.0);
-
-  return ret;
+  return vec2(op_union(cyl, box), 10.0);
+  //return vec2(cyl, 1.0);
 }
 
-vec3 calcNormal(in vec3 pos) {
+vec3 calcNormal(in vec3 origin, in vec3 direction, in float t) {
+  vec3 pos = origin + direction * t;
   vec3 eps = vec3(0.001, 0.0, 0.0);
   vec3 nor = vec3(
-      map(pos+eps.xyy).x - map(pos-eps.xyy).x,
-      map(pos+eps.yxy).x - map(pos-eps.yxy).x,
-      map(pos+eps.yyx).x - map(pos-eps.yyx).x
+      map(origin+eps.xyy, direction, t).x - map(origin-eps.xyy, direction, t).x,
+      map(origin+eps.yxy, direction, t).x - map(origin-eps.yxy, direction, t).x,
+      map(origin+eps.yyx, direction, t).x - map(origin-eps.yyx, direction, t).x
   );
   return normalize(nor);
 }
 
 vec2 castRay(in vec3 ro, in vec3 rd, in float maxd) {
-  float precis = 0.001;
+  float precis = 0.01;
   float h=precis;
   float t = 0.0;
   float m = -1.0;
-  float closest = precis*100.0;
   for(int i=0; i<RAYMARCH_CYCLES; i++) {
-    if(abs(h)<precis || t>maxd) {
+    vec3 pos = ro + rd * t;
+    if(abs(h)<precis) {
+
+//      float dist = length(pos.y - (1.0 - depth_get(pos.xz))) - pos.y;
+      if (solid_depthmap(pos) > precis) {
+
+        break;
+      }
+    }
+
+    if (t>maxd) {
       break;
     }
 
-    t += h;
-    vec2 res = map(ro+rd*t);
+    t += max(h, precis);
+    vec2 res = map(ro, rd, t);
     h = res.x;
     m = res.y;
   }
@@ -115,18 +130,20 @@ vec2 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     m=-1.0;
   }
 
+
+
   return vec2(t, m);
 }
 
 vec3 render(in vec3 ro, in vec3 rd) {
   vec3 col = vec3(0.0);
-  vec2 res = castRay(ro,rd,5.0);
+  vec2 res = castRay(ro,rd,10.0);
 
   float t = res.x;
   float m = res.y;
   if(m>-0.5) {
     vec3 pos = ro + t*rd;
-    vec3 nor = calcNormal(pos);
+    vec3 nor = calcNormal(ro, rd, t);
 
     //col = vec3(0.6) + 0.4*sin(vec3(0.05,0.08,0.10)*(m-1.0));
     col = vec3(0.6) + 0.4*sin(vec3(0.05,0.08,0.10)*(m-1.0));
@@ -167,7 +184,7 @@ void main(void)
 
 
   // camera
-  //vec3 ro = vec3(2.0, 0.5, -0.5);//vec3( -0.5+3.2*cos(0.1*time + 6.0*mo.x), 1.0 + 2.0*mo.y, 0.5 + 3.2*sin(0.1*time + 6.0*mo.x) );
+  // vec3 ro = vec3(4.0, 1.0, -0.0);
   vec3 ro = vec3(
     -1.0+3.2*cos(0.1*time + 6.0*mo.x),
     1.0 + 3.0*mo.y,
@@ -188,7 +205,7 @@ void main(void)
 
   vec3 col = render( ro, rd );
 
-  // if (depth_get(q) < 0.0) {
+  // if (depth_get(q) > 0.0) {
   //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
   // } else {
     col = sqrt( col );
