@@ -35,16 +35,30 @@ float solid_box(vec3 p, vec3 b) {
 
 
 float solid_depthmap(vec3 p) {
-  float depth = depth_get(p.xz + 0.5);
-  float zdist = abs(p.y) - depth;
+  vec2 pos = floor(p.xz * 2048.0) / 2048.0;
+  float depth = depth_get(pos + 0.5);
 
+  // return  (p.y - depth) + (p.xz - pos);
+//  return min(length(pos), length(depth - p.y)) - .05;
+//  return length(vec3(pos.x, length(p.y - depth) - .05, pos.y));
+
+  // float depth = depth_get(pos + 0.5);
+  // float zdist = length(abs(p) - depth);
+  // float zdist = min(RAYMARCH_PRECISION, p.y - depth);
+  float zdist = p.y - depth;
+  float dist = length(vec3(pos.x, zdist, pos.y) - p);
+  // float dist =  length();
+  // return zdist - dist;
   // now get the distance from p.xz to the actual
   // pixel location
 
-  vec2 xzdist = p.xz/512.0;
-  float d = length(xzdist + zdist);
 
-  return  min(RAYMARCH_PRECISION, d - 0.005);
+  // float d = length(xzdist) - 1.0/zdist;
+  // return d - .05;
+  return max(
+    min(RAYMARCH_PRECISION, dist),
+    p.y
+  );
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -85,10 +99,8 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     cutterRadius
   );
 
-  float res = op_union(cyl, box);
-
-  res = op_subtract(solid_depthmap(pos - vec3(0.0, 0.05, 0.0)), res);
-
+  float res = op_intersect(box, solid_depthmap(pos - vec3(0.0, 0.2, 0.0)));
+  res = op_union(cyl, res);
   return vec2(res, 10.0);
 }
 
@@ -185,12 +197,12 @@ void main(void)
 
 
   // camera
-  // vec3 ro = vec3(4.0, 1.0, -0.0);
-  vec3 ro = vec3(
-    -1.0+3.2*cos(0.1*time + 6.0*mo.x),
-    1.0 + 3.0*mo.y,
-    -1.0 + 3.2*sin(0.1*time + 6.0*mo.x)
-  );
+  vec3 ro = vec3(1.0, 1.0, -0.0);
+  // vec3 ro = vec3(
+  //   -1.0+3.2*cos(0.1*time + 6.0*mo.x),
+  //   1.0 + 3.0*mo.y,
+  //   -1.0 + 3.2*sin(0.1*time + 6.0*mo.x)
+  // );
 
   vec3 ta = vec3(0.0, 0.0, 0.0);//vec3( -0.5, -0.2, 0.5 );
 
