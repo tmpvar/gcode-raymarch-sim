@@ -149,7 +149,7 @@ vec3 render(in vec3 ro, in vec3 rd) {
 
   float t = res.x;
   float m = res.y;
-  if(m>-0.5) {
+  //if(m>-0.5) {
     vec3 pos = ro + t*rd;
     vec3 nor = calcNormal(ro, rd, t);
 
@@ -181,7 +181,7 @@ vec3 render(in vec3 ro, in vec3 rd) {
     float fre = pow(clamp(1.0+dot(nor,rd),0.0,1.0), 2.0);//*ao;
 
     col = col*brdf + vec3(1.0)*col*spe + 0.2*fre*(0.5+0.5*col);
-  }
+  //}
 
   col *= exp(-0.01*t*t);
 
