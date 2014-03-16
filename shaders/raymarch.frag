@@ -85,30 +85,20 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     cutterRadius
   );
 
-  // float scale = 1.0;//20.0;
-  // float resize = 1.23;
-  // float ret = op_union(
-  //   box,
-  //   length(pos.y - (1.0 - depth_get(pos.xy))) - pos.y
-  // );
-
-  //float v = length(pos/2.0 - vec3(0.0, 1.0 - depth_get(pos.xz), 0.0));
-
   float res = op_union(cyl, box);
 
   res = op_subtract(solid_depthmap(pos - vec3(0.0, 0.05, 0.0)), res);
 
   return vec2(res, 10.0);
-  //return vec2(cyl, 1.0);
 }
 
-vec3 calcNormal(in vec3 origin, in vec3 direction, in float t) {
-  vec3 pos = origin + direction * t;
+vec3 calcNormal(in vec3 origin, in vec3 dir, in float t) {
+  vec3 pos = origin + dir * t;
   vec3 eps = vec3(0.001, 0.0, 0.0);
   vec3 nor = vec3(
-      map(origin+eps.xyy, direction, t).x - map(origin-eps.xyy, direction, t).x,
-      map(origin+eps.yxy, direction, t).x - map(origin-eps.yxy, direction, t).x,
-      map(origin+eps.yyx, direction, t).x - map(origin-eps.yyx, direction, t).x
+      map(origin+eps.xyy, dir, t).x - map(origin-eps.xyy, dir, t).x,
+      map(origin+eps.yxy, dir, t).x - map(origin-eps.yxy, dir, t).x,
+      map(origin+eps.yyx, dir, t).x - map(origin-eps.yyx, dir, t).x
   );
   return normalize(nor);
 }
@@ -122,10 +112,6 @@ vec2 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     vec3 pos = ro + rd * t;
     if(abs(h) < RAYMARCH_PRECISION) {
       break;
-      // TODO: consider averaging much like the calc-normal code
-      // if (solid_depthmap(pos) > precis) {
-      //   break;
-      // }
     }
 
     if (t>maxd) {
@@ -163,10 +149,15 @@ vec3 render(in vec3 ro, in vec3 rd) {
     vec3 lig = normalize(vec3(-0.6, 0.7, -0.5));
     float amb = clamp(0.5+0.5*nor.y, 0.0, 1.0);
     float dif = clamp(dot(nor, lig), 0.0, 1.0);
-    float bac = clamp(dot(nor, normalize(vec3(-lig.x,0.0,-lig.z))), 0.0, 1.0)*clamp(1.0-pos.y,0.0,1.0);
+    float bac = clamp(
+      dot(nor, normalize(vec3(-lig.x, 0.0, -lig.z))), 0.0, 1.0
+    ) * clamp(1.0 - pos.y,0.0,1.0);
 
     float sh = 1.0;
-    //if(dif>0.02) { sh = softshadow(pos, lig, 0.02, 10.0, 7.0); dif *= sh; }
+    // if(dif>0.02) {
+    //   sh = softshadow(pos, lig, 0.02, 10.0, 7.0);
+    //   dif *= sh;
+    // }
 
     vec3 brdf = vec3(0.0);
     brdf += 0.20*amb*vec3(0.10,0.11,0.13);//*ao;
