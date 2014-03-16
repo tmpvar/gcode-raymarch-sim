@@ -4,6 +4,7 @@ precision lowp float;
 
 #define M_PI 3.141593
 #define RAYMARCH_CYCLES 128
+#define RAYMARCH_PRECISION 0.001
 
 uniform float time;
 uniform float depth_stride;
@@ -11,13 +12,12 @@ uniform vec2 mouse;
 uniform vec2 resolution;
 uniform sampler2D depth;
 
-vec3 cutterPosition = vec3(0, 0.25, .2);
-float cutterRadius = .15;
+uniform vec3 cutterPosition;// = vec3(0, 0.25, .2);
+float cutterRadius = .05;
 
 
 float depth_get(in vec2 uv) {
-//  uv /= vec2(512.0, 512.0);
-  return texture2D(depth, uv*512.0).x;
+  return texture2D(depth, uv).x;
 }
 
 float solid_plane(vec3 p) {
@@ -35,7 +35,16 @@ float solid_box(vec3 p, vec3 b) {
 
 
 float solid_depthmap(vec3 p) {
-  return length(p.y - (1.0 - depth_get(p.xz))) - p.y;
+  float depth = depth_get(p.xz + 0.5);
+  float zdist = abs(p.y) - depth;
+
+  // now get the distance from p.xz to the actual
+  // pixel location
+
+  vec2 xzdist = p.xz/512.0;
+  float d = length(xzdist + zdist);
+
+  return  min(RAYMARCH_PRECISION, d - 0.005);
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -85,7 +94,11 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   //float v = length(pos/2.0 - vec3(0.0, 1.0 - depth_get(pos.xz), 0.0));
 
-  return vec2(op_union(cyl, box), 10.0);
+  float res = op_union(cyl, box);
+
+  res = op_subtract(solid_depthmap(pos - vec3(0.0, 0.05, 0.0)), res);
+
+  return vec2(res, 10.0);
   //return vec2(cyl, 1.0);
 }
 
@@ -101,26 +114,25 @@ vec3 calcNormal(in vec3 origin, in vec3 direction, in float t) {
 }
 
 vec2 castRay(in vec3 ro, in vec3 rd, in float maxd) {
-  float precis = 0.01;
-  float h=precis;
+
+  float h=RAYMARCH_PRECISION;
   float t = 0.0;
   float m = -1.0;
   for(int i=0; i<RAYMARCH_CYCLES; i++) {
     vec3 pos = ro + rd * t;
-    if(abs(h)<precis) {
-
-//      float dist = length(pos.y - (1.0 - depth_get(pos.xz))) - pos.y;
-      if (solid_depthmap(pos) > precis) {
-
-        break;
-      }
+    if(abs(h) < RAYMARCH_PRECISION) {
+      break;
+      // TODO: consider averaging much like the calc-normal code
+      // if (solid_depthmap(pos) > precis) {
+      //   break;
+      // }
     }
 
     if (t>maxd) {
       break;
     }
 
-    t += max(h, precis);
+    t += max(h, RAYMARCH_PRECISION);
     vec2 res = map(ro, rd, t);
     h = res.x;
     m = res.y;
@@ -129,8 +141,6 @@ vec2 castRay(in vec3 ro, in vec3 rd, in float maxd) {
   if (t>maxd) {
     m=-1.0;
   }
-
-
 
   return vec2(t, m);
 }
@@ -200,12 +210,9 @@ void main(void)
   vec3 cv = normalize( cross(cu,cw) );
   vec3 rd = normalize( p.x*cu + p.y*cv + 2.5*cw );
 
-  cutterPosition.x = cos(time)/2.0;
-  cutterPosition.z = sin(time)/2.0;
 
   vec3 col = render( ro, rd );
-
-  // if (depth_get(q) > 0.0) {
+  // if (depth_get(q) >= 1.0) {
   //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
   // } else {
     col = sqrt( col );
