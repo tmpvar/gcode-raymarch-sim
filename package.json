@@ -7,6 +7,11 @@
     "gl-now": "~1.0.0",
     "glslify": "~1.2.1",
     "ndarray": "~1.0.10",
-    "gl-texture2d": "~0.1.11"
+    "gl-texture2d": "~0.1.11",
+    "ndarray-fill": "^0.1.0"
+  },
+  "devDependencies": {
+    "beefy": "^1.1.0",
+    "browserify": "^3.33.0"
   }
 }
