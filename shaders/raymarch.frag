@@ -34,13 +34,24 @@ float solid_box(vec3 p, vec3 b) {
 }
 
 
-float solid_depthmap(vec3 p) {
+float solid_depthmap(vec3 p, float t) {
   float r = 1.0/2048.0;
   vec2 pos = floor(p.xz * 2048.0) / 2048.0;
   float depth = depth_get(p.xz + 0.5);
 
-  float zdist = p.y - (0.1 - depth);
-  return max(RAYMARCH_PRECISION, min(RAYMARCH_PRECISION*400.0, min(zdist, length(pos - .25))));
+  float zdist = (.05 - depth) - p.y;
+  //zdist = min(zdist, .1 - p.y);
+
+
+  // zdist = min(t, zdist);
+  // zdist = min(zdist, length(zdist));
+  // zdist = min(length(p.xz - .25), zdist);
+  // zdist = min(length(p.xz + .25), zdist);
+
+
+  //return max(RAYMARCH_PRECISION, min(RAYMARCH_PRECISION*400.0, min(zdist, length(pos - .25))));
+
+  return zdist;
 
   return min(
     max(RAYMARCH_PRECISION, length(zdist)),
@@ -86,8 +97,9 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     cutterRadius
   );
   
+  //return vec2(solid_depthmap(pos, amount), 1.0);
 
-  float res = op_intersect(box, solid_depthmap(pos));
+  float res = op_subtract(solid_depthmap(pos, amount), box);
   res = op_union(cyl, res);
   return vec2(res, 10.0);
 }
