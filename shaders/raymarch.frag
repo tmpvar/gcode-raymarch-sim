@@ -197,7 +197,7 @@ void main(void)
 
 
   // camera
-  vec3 ro = vec3(1.0, 1.0, -0.0);
+  vec3 ro = vec3(1.0 + sin(6.0 * mo.x), -3.0 + 6.0 * mo.y, 0.0);
   // vec3 ro = vec3(
   //   -1.0+3.2*cos(0.1*time + 6.0*mo.x),
   //   1.0 + 3.0*mo.y,
