@@ -43,26 +43,21 @@ shell.on('gl-init', function() {
   this.raymarchProgram.uniforms.depth_stride = width;
 
   this.depthArray = ndarray(new Float32Array(width*height), [width, height]);
-// console.log(this.depthArray);
-//   ndfill(this.depthArray.hi(1024, 1024).lo(0, 0), function(i, j) {
-//     return 1;
-//   });
 
-//   ndfill(this.depthArray.hi(2048, 2048).lo(1024, 1024), function(i, j) {
-//     return 1;
-//   });
-
-
-  // ndfill(this.depthArray.lo(0, 0).hi(512, 512), function(i, j) {
-  //   return 1;
-  // });
   ndfill(this.depthArray.lo(1024-128, 1024-128).hi(1024, 1024), function(i, j) {
     return 1;
   });
 
   this.depthTexture = createTexture(gl, this.depthArray);
-console.log(this.depthTexture);
+
   this.depthTexture.bind('depth');
+});
+
+
+var mouse = [0, window.innerHeight];
+document.addEventListener('mousemove', function(ev) {
+  mouse[0] = ev.clientX;
+  mouse[1] = ev.clientY;
 });
 
 var elapsed = 0;
@@ -75,10 +70,12 @@ var render = function(t) {
     gl.drawingBufferHeight
   ];
 
+  this.raymarchProgram.uniforms.mouse = mouse;
+
   var time = this.raymarchProgram.uniforms.time = (Date.now() - start)/1000;
 
-  var ctime = Math.cos(time);
-  var stime = Math.sin(time);
+  var ctime = Math.cos(time)/2;
+  var stime = Math.sin(time)/2;
 
   this.raymarchProgram.uniforms.cutterPosition = [
     stime/2, 0.2, ctime/2
@@ -87,12 +84,6 @@ var render = function(t) {
   var areax = (Math.floor(ctime*1022) + 1024);
   var areay = (Math.floor(stime*1022) + 1024);
 
-  //console.log(areax-1, areay-1, areax+1, areay+1);
-  // this.depthArray.set(areax-2, areay-2, 1);
-  // this.depthArray.set(areax-1, areay-1, 1);
-  // this.depthArray.set(areax, areay, 1);
-  // this.depthArray.set(areax+1, areay+1, 1);
-  // this.depthArray.set(areax+2, areay+2, 1);
   var r = 40;
   ndfill(this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r), function(i, j) {
     return .1;
@@ -104,5 +95,3 @@ var render = function(t) {
 }
 
 shell.on('gl-render', render);
-
-
