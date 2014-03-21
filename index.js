@@ -45,7 +45,7 @@ shell.on('gl-init', function() {
   this.depthArray = ndarray(new Float32Array(width*height), [width, height]);
 
   ndfill(this.depthArray.lo(1024-128, 1024-128).hi(1024, 1024), function(i, j) {
-    return 1;
+    return 1.0;
   });
 
   this.depthTexture = createTexture(gl, this.depthArray);
@@ -61,7 +61,12 @@ document.addEventListener('mousemove', function(ev) {
 });
 
 var elapsed = 0;
-var start = Date.now(), first = false;
+var start = Date.now(), first = false, v = 0.001;
+
+setInterval(function() {
+  v += .01;
+}, 1000);
+
 var render = function(t) {
   var gl = this.gl;
 
@@ -81,12 +86,14 @@ var render = function(t) {
     stime/2, 0.2, ctime/2
   ];
 
-  var areax = (Math.floor(ctime*1022) + 1024);
-  var areay = (Math.floor(stime*1022) + 1024);
+  var areax = (Math.floor(ctime*1024) + 1024);
+  var areay = (Math.floor(stime*1024) + 1024);
 
   var r = 40;
-  ndfill(this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r), function(i, j) {
-    return .1;
+  var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
+  ndfill(depthArray, function(i, j) {
+    var orig = depthArray.get(i, j);
+    return (v > orig) ? v : orig;
   });
 
   this.depthTexture.setPixels(this.depthArray);
