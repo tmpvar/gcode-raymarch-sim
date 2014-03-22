@@ -4,7 +4,7 @@ precision highp float;
 
 #define M_PI 3.141593
 #define RAYMARCH_CYCLES 256
-#define RAYMARCH_PRECISION 0.0000001
+#define RAYMARCH_PRECISION 0.000001
 
 uniform float time;
 uniform float depth_stride;
@@ -53,20 +53,6 @@ float solid_depthmap(vec3 p, float amount) {
     p - vec3(pos.x, 0.1, pos.y),
     vec3(d, depth, d)
   );
-
-
-  // float r = 1.0/2048.0;
-  // vec2 pos = floor(p.xz * 2048.0) / 2048.0;
-  // float depth = depth_get(p.xz + 0.5);
-
-  // float zdist = (.05 - depth) - p.y;
-
-  // return zdist;
-
-  // return min(
-  //   max(RAYMARCH_PRECISION, length(zdist)),
-  //   p.y
-  // );
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -95,6 +81,10 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   vec3 pos = origin + dir * amount;
 
+  if (pos.y < 0.0) {
+    return vec2(RAYMARCH_PRECISION * .99, -1.0);
+  }
+
   float box = solid_box(
     pos,
     vec3(.5, .1, .5)
@@ -117,18 +107,19 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
   res = solid_depthmap(pos, amount);
   res = op_subtract(res, op_union(box2, box));
   res = op_union(cyl, res);
+
   return vec2(res, 10.0);
 }
 
 vec3 calcNormal(in vec3 origin, in vec3 dir, in float t) {
   vec3 pos = origin + dir * t;
-  vec3 eps = vec3(0.0025, 0.0, 0.0);
+  vec3 eps = vec3(0.001, 0.0, 0.0);
   vec3 nor = vec3(
       map(origin+eps.xyy, dir, t).x - map(origin-eps.xyy, dir, t).x,
       map(origin+eps.yxy, dir, t).x - map(origin-eps.yxy, dir, t).x,
       map(origin+eps.yyx, dir, t).x - map(origin-eps.yyx, dir, t).x
   );
-  return normalize(nor);
+  return max(eps, normalize(nor));
 }
 
 vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
@@ -139,7 +130,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
   float d = 0.0;
   for(int i=0; i<RAYMARCH_CYCLES; i++) {
     vec3 pos = ro + rd * t;
-    if(abs(h) < RAYMARCH_PRECISION) {
+    if(h < RAYMARCH_PRECISION) {
       break;
     }
 
@@ -151,7 +142,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     vec2 res = map(ro, rd, t);
     h = max(res.x, RAYMARCH_PRECISION);
     h = res.x;
-    t += max(h * .9, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
+    t += max(h * .99, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
     m = res.y;
     d = float(i);
   }
@@ -165,15 +156,18 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
 
 vec3 render(in vec3 ro, in vec3 rd) {
   vec3 col = vec3(0.0);
-  vec3 res = castRay(ro,rd,20.0);
+  vec3 res = castRay(ro,rd,5.0);
 
   float t = res.x;
   float m = res.y;
+  vec3 v = max(calcNormal(ro, rd, t), 1.0 / res);
+  return vec3(dot(clamp(v, 0.2, smoothstep(0.4, .8, min(m, t))), normalize(res)));
+
   if(m>-0.5) {
 
     vec3 pos = ro + t*rd;
-    //vec3 nor = calcNormal(ro, rd, t);
-    vec3 nor = calcNormal(ro, vec3(-0.05, -.5, 0.0), t);
+    vec3 nor = calcNormal(ro, rd, t);
+    //vec3 nor = calcNormal(ro, vec3(-0.05, -.5, 0.0), t);
 
     col = vec3(0.6) + 2.0*sin(vec3(0.05,0.08,0.10)*(m-1.0));
     //col = vec3(0.5) + 0.2*sin(vec3(0.05,0.08,0.10)*(m-1.0));
@@ -205,8 +199,8 @@ vec3 render(in vec3 ro, in vec3 rd) {
     col = col*brdf + vec3(1.0)*col*spe + 0.2*fre*(0.5+0.5*col);
   }
 
-  col *= exp(-0.001*t*t);
-  return vec3(clamp(col,0.0,1.0));
+  col *= exp(-0.0001*t*t);
+  return max(1.0 / vec3(res.z), vec3(clamp(col,0.0,0.5)));
 }
 
 void main(void)
