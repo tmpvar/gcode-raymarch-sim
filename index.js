@@ -3,6 +3,7 @@ var shell = window.shell = require('gl-now')();
 var ndarray = require('ndarray');
 var ndfill = require('ndarray-fill');
 var createTexture = require('gl-texture2d');
+var Vec2 = require('vec2');
 
 var createRaymarchProgram = glslify({
   vertex: './shaders/raymarch.vert',
@@ -47,9 +48,9 @@ shell.on('gl-init', function() {
 
   this.depthArray = ndarray(new Float32Array(width*height), [width, height]);
 
-  ndfill(this.depthArray.lo(1024-128, 1024-128).hi(1024, 1024), function(i, j) {
-    return 1.0;
-  });
+  // ndfill(this.depthArray.lo(1024-128, 1024-128).hi(1024, 1024), function(i, j) {
+  //   return 1.0;
+  // });
 
   this.depthTexture = createTexture(gl, this.depthArray);
 
@@ -98,8 +99,13 @@ var render = function(t) {
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
   ndfill(depthArray, function(i, j) {
     var orig = depthArray.get(i, j);
-    if (v > orig) {
-      return v;
+//    console.log(Math.sin((i - r)) + (j - r)));
+    computed = v;// + Math.sin((i - r)) + (j - r));//Math.sin(v * (i - r)) + Math.cos(v * (i - r));
+
+    var d = Vec2(i - r , j - r).length();
+
+    if (computed > orig && d < r) {
+      return computed;
     } else {
       return orig;
     }

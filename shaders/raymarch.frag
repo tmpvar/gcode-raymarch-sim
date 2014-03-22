@@ -105,7 +105,7 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   float res;
   res = solid_depthmap(pos, amount);
-  res = op_subtract(res, op_union(box2, box));
+  res = op_subtract(res, box);
   res = op_union(cyl, res);
 
   return vec2(res, 10.0);
