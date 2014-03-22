@@ -13,7 +13,8 @@ uniform vec2 resolution;
 uniform sampler2D depth;
 
 uniform vec3 cutterPosition;// = vec3(0, 0.25, .2);
-float cutterRadius = .05;
+//uniform float cutterRadius;// = .05;
+uniform float cutterRadius;// = .05;
 
 float depth_get(in vec2 uv) {
   return texture2D(depth, uv).x;

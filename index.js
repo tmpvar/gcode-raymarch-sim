@@ -9,10 +9,13 @@ var createRaymarchProgram = glslify({
   fragment: './shaders/raymarch.frag'
 });
 
+var cutterRadius = 0.05;
+
 var uniforms = {
   time : 0,
   mouse : [0, 0],
-  resolution: [0, 0]
+  resolution: [0, 0],
+  cutterRadius : cutterRadius
 };
 
 shell.on('gl-init', function() {
@@ -64,7 +67,7 @@ var elapsed = 0;
 var start = Date.now(), first = false, v = 0.001;
 
 setInterval(function() {
-  v += .01;
+  v += .005;
 }, 1000);
 
 var render = function(t) {
@@ -86,10 +89,12 @@ var render = function(t) {
     stime/2, -v, ctime/2
   ];
 
+  this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
+
   var areax = (Math.floor(ctime*1024) + 1024);
   var areay = (Math.floor(stime*1024) + 1024);
+  var r = Math.floor(cutterRadius / (1/2048));
 
-  var r = 100;
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
   ndfill(depthArray, function(i, j) {
     var orig = depthArray.get(i, j);
