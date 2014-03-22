@@ -71,6 +71,23 @@ setInterval(function() {
   v += .005;
 }, 1000);
 
+
+var r = Math.floor(cutterRadius / (1/2048));
+
+console.log(r);
+var tool = ndarray(new Float32Array((r*2 * r*2) * 4), [r*2*4, r*2*4]);
+
+ndfill(tool, function(i, j) {
+  if (Vec2(i - r , j - r).length() < r) {
+    return 1;
+  } else {
+    return 0;
+  }
+});
+
+console.log(tool)
+
+
 var render = function(t) {
   var gl = this.gl;
 
@@ -94,17 +111,15 @@ var render = function(t) {
 
   var areax = (Math.floor(ctime*1024) + 1024);
   var areay = (Math.floor(stime*1024) + 1024);
-  var r = Math.floor(cutterRadius / (1/2048));
 
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
   ndfill(depthArray, function(i, j) {
     var orig = depthArray.get(i, j);
-//    console.log(Math.sin((i - r)) + (j - r)));
-    computed = v;// + Math.sin((i - r)) + (j - r));//Math.sin(v * (i - r)) + Math.cos(v * (i - r));
 
-    var d = Vec2(i - r , j - r).length();
+    var map = tool.get(i, j);
+    var computed = v * map;
 
-    if (computed > orig && d < r) {
+    if (computed > orig && map > 0) {
       return computed;
     } else {
       return orig;
