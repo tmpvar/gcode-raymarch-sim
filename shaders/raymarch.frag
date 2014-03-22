@@ -3,8 +3,8 @@ precision highp float;
 #endif
 
 #define M_PI 3.141593
-#define RAYMARCH_CYCLES 64
-#define RAYMARCH_PRECISION 0.00001
+#define RAYMARCH_CYCLES 256
+#define RAYMARCH_PRECISION 0.0000001
 
 uniform float time;
 uniform float depth_stride;
@@ -14,7 +14,6 @@ uniform sampler2D depth;
 
 uniform vec3 cutterPosition;// = vec3(0, 0.25, .2);
 float cutterRadius = .05;
-
 
 float depth_get(in vec2 uv) {
   return texture2D(depth, uv).x;
@@ -34,29 +33,40 @@ float solid_box(vec3 p, vec3 b) {
 }
 
 
-float solid_depthmap(vec3 p, float t) {
+float solid_depthmap(vec3 p, float amount) {
   float r = 1.0/2048.0;
+
+  if (abs(p.x) > .5 || abs(p.z) > .5) {
+    return RAYMARCH_PRECISION/10.0;
+  }
+
   vec2 pos = floor(p.xz * 2048.0) / 2048.0;
   float depth = depth_get(p.xz + 0.5);
 
-  float zdist = (.05 - depth) - p.y;
-  //zdist = min(zdist, .1 - p.y);
+  if (depth == 0.0) {
+    return min(amount, RAYMARCH_PRECISION);
+  }
 
+  float d = r*10.0 ;//* 2.25;
 
-  // zdist = min(t, zdist);
-  // zdist = min(zdist, length(zdist));
-  // zdist = min(length(p.xz - .25), zdist);
-  // zdist = min(length(p.xz + .25), zdist);
-
-
-  //return max(RAYMARCH_PRECISION, min(RAYMARCH_PRECISION*400.0, min(zdist, length(pos - .25))));
-
-  return zdist;
-
-  return min(
-    max(RAYMARCH_PRECISION, length(zdist)),
-    p.y
+  return solid_box(
+    p - vec3(pos.x, 0.1, pos.y),
+    vec3(d, depth, d)
   );
+
+
+  // float r = 1.0/2048.0;
+  // vec2 pos = floor(p.xz * 2048.0) / 2048.0;
+  // float depth = depth_get(p.xz + 0.5);
+
+  // float zdist = (.05 - depth) - p.y;
+
+  // return zdist;
+
+  // return min(
+  //   max(RAYMARCH_PRECISION, length(zdist)),
+  //   p.y
+  // );
 }
 
 float solid_cylinder(vec3 p, vec3 c) {
@@ -86,9 +96,15 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
   vec3 pos = origin + dir * amount;
 
   float box = solid_box(
-    pos - vec3(0.0, 0.0, 0.0),
+    pos,
     vec3(.5, .1, .5)
   );
+
+  float box2 = solid_box(
+    pos - vec3(0.25, .1, 0.25),
+    vec3(.1, .1, .1)
+  );
+
 
   float cyl = solid_capsule(
     pos-cutterPosition,
@@ -96,17 +112,17 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     vec3(.0, .5, 0.01),
     cutterRadius
   );
-  
-  //return vec2(solid_depthmap(pos, amount), 1.0);
 
-  float res = op_subtract(solid_depthmap(pos, amount), box);
+  float res;
+  res = solid_depthmap(pos, amount);
+  res = op_subtract(res, op_union(box2, box));
   res = op_union(cyl, res);
   return vec2(res, 10.0);
 }
 
 vec3 calcNormal(in vec3 origin, in vec3 dir, in float t) {
   vec3 pos = origin + dir * t;
-  vec3 eps = vec3(0.001, 0.0, 0.0);
+  vec3 eps = vec3(0.0025, 0.0, 0.0);
   vec3 nor = vec3(
       map(origin+eps.xyy, dir, t).x - map(origin-eps.xyy, dir, t).x,
       map(origin+eps.yxy, dir, t).x - map(origin-eps.yxy, dir, t).x,
@@ -133,8 +149,9 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
 
     // t += max(h, RAYMARCH_PRECISION);
     vec2 res = map(ro, rd, t);
+    h = max(res.x, RAYMARCH_PRECISION);
     h = res.x;
-    t += h * .5;
+    t += max(h * .9, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
     m = res.y;
     d = float(i);
   }
@@ -149,16 +166,17 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
 vec3 render(in vec3 ro, in vec3 rd) {
   vec3 col = vec3(0.0);
   vec3 res = castRay(ro,rd,20.0);
-  //return res;
 
   float t = res.x;
   float m = res.y;
-  //if(m>-0.5) {
-    vec3 pos = ro + t*rd;
-    vec3 nor = calcNormal(ro, rd, t);
+  if(m>-0.5) {
 
-    //col = vec3(0.6) + 0.4*sin(vec3(0.05,0.08,0.10)*(m-1.0));
-    col = vec3(0.6) + 0.2*sin(vec3(0.05,0.08,0.10)*(m-1.0));
+    vec3 pos = ro + t*rd;
+    //vec3 nor = calcNormal(ro, rd, t);
+    vec3 nor = calcNormal(ro, vec3(-0.05, -.5, 0.0), t);
+
+    col = vec3(0.6) + 2.0*sin(vec3(0.05,0.08,0.10)*(m-1.0));
+    //col = vec3(0.5) + 0.2*sin(vec3(0.05,0.08,0.10)*(m-1.0));
 
     //float ao = calcAO(pos, nor);
 
@@ -185,10 +203,9 @@ vec3 render(in vec3 ro, in vec3 rd) {
     float fre = pow(clamp(1.0+dot(nor,rd),0.0,1.0), 2.0);//*ao;
 
     col = col*brdf + vec3(1.0)*col*spe + 0.2*fre*(0.5+0.5*col);
-  //}
+  }
 
-  col *= exp(-0.01*t*t);
-
+  col *= exp(-0.001*t*t);
   return vec3(clamp(col,0.0,1.0));
 }
 
