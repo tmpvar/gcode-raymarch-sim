@@ -1,5 +1,5 @@
 var glslify = require('glslify');
-var shell = require('gl-now')();
+var shell = window.shell = require('gl-now')();
 var ndarray = require('ndarray');
 var ndfill = require('ndarray-fill');
 var createTexture = require('gl-texture2d');
@@ -83,20 +83,24 @@ var render = function(t) {
   var stime = Math.sin(time)/2;
 
   this.raymarchProgram.uniforms.cutterPosition = [
-    stime/2, 0.2, ctime/2
+    stime/2, -v, ctime/2
   ];
 
   var areax = (Math.floor(ctime*1024) + 1024);
   var areay = (Math.floor(stime*1024) + 1024);
 
-  var r = 40;
+  var r = 100;
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
   ndfill(depthArray, function(i, j) {
     var orig = depthArray.get(i, j);
-    return (v > orig) ? v : orig;
+    if (v > orig) {
+      return v;
+    } else {
+      return orig;
+    }
   });
 
-  this.depthTexture.setPixels(this.depthArray);
+  this.depthTexture.setPixels(depthArray, areay - r, areax - r);
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 }

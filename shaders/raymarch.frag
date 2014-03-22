@@ -95,9 +95,8 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     vec3(.1, .1, .1)
   );
 
-
   float cyl = solid_capsule(
-    pos-cutterPosition,
+    pos - (cutterPosition + vec3(0.0, (.1 + cutterRadius), 0.0)),
     vec3(.0, .0, 0.01),
     vec3(.0, .5, 0.01),
     cutterRadius
