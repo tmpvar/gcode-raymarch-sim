@@ -73,12 +73,28 @@ var r = Math.floor(cutterRadius / ratio);
 var tool = ndarray(new Float32Array((r*2 * r*2) * 4), [r*2*4, r*2*4]);
 
 ndfill(tool, function(i, j) {
+  // x difference, where r is the radius of the tool and i is the x coord
   var di = (i - r);
+
+  // y difference
   var dj = (j - r);
-  var dz = r;//(cutterRadius - 0.05) / ratio;
+
+  // this is weird because we have to convert the top of the stock,
+  // known to be at 0.05 in the "world"
+  //
+  // basically this gives us the difference between the center of the
+  // ball and the top of the stock
+
+  var dz = (0.05/ratio) - r;
+
+  // enabling this causes the tool width be roughly 1/2 the expected size
+  // var dz = (0.05/ratio) - r;
+
+  // compute the distance from 0,0 to x,y
   var l = Math.sqrt(di * di + dj * dj);
-  var dist = Math.sqrt(dz * dz - l * l) / r;
-  return dist;
+
+  // compute the depth using pythagorean theorum
+  return Math.sqrt(dz * dz - l * l) / r;
 });
 
 var render = function(t) {
