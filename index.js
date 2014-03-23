@@ -85,7 +85,7 @@ ndfill(tool, function(i, j) {
   // basically this gives us the difference between the center of the
   // ball and the top of the stock
 
-  var dz = (0.05/ratio) - r;
+  var dz = r;
 
   // enabling this causes the tool width be roughly 1/2 the expected size
   // var dz = (0.05/ratio) - r;
