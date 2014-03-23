@@ -10,7 +10,7 @@ var createRaymarchProgram = glslify({
   fragment: './shaders/raymarch.frag'
 });
 
-var cutterRadius = 0.05;
+var cutterRadius = 0.1;
 
 var uniforms = {
   time : 0,
@@ -48,10 +48,6 @@ shell.on('gl-init', function() {
 
   this.depthArray = ndarray(new Float32Array(width*height), [width, height]);
 
-  // ndfill(this.depthArray.lo(1024-128, 1024-128).hi(1024, 1024), function(i, j) {
-  //   return 1.0;
-  // });
-
   this.depthTexture = createTexture(gl, this.depthArray);
 
   this.depthTexture.bind('depth');
@@ -65,28 +61,25 @@ document.addEventListener('mousemove', function(ev) {
 });
 
 var elapsed = 0;
-var start = Date.now(), first = false, v = 0.001;
+var start = Date.now(), first = false, v = -.01;
 
 setInterval(function() {
-  v += .005;
-}, 1000);
+  v += .0005;
+}, 100);
 
+var ratio = (1/2048);
+var r = Math.floor(cutterRadius / ratio);
 
-var r = Math.floor(cutterRadius / (1/2048));
-
-console.log(r);
 var tool = ndarray(new Float32Array((r*2 * r*2) * 4), [r*2*4, r*2*4]);
 
 ndfill(tool, function(i, j) {
-  if (Vec2(i - r , j - r).length() < r) {
-    return 1;
-  } else {
-    return 0;
-  }
+  var di = (i - r);
+  var dj = (j - r);
+  var dz = r;//(cutterRadius - 0.05) / ratio;
+  var l = Math.sqrt(di * di + dj * dj);
+  var dist = Math.sqrt(dz * dz - l * l) / r;
+  return dist;
 });
-
-console.log(tool)
-
 
 var render = function(t) {
   var gl = this.gl;
@@ -104,7 +97,7 @@ var render = function(t) {
   var stime = Math.sin(time)/2;
 
   this.raymarchProgram.uniforms.cutterPosition = [
-    stime/2, -v, ctime/2
+    stime/2, -(v + .005), ctime/2
   ];
 
   this.raymarchProgram.uniforms.cutterRadius = cutterRadius;

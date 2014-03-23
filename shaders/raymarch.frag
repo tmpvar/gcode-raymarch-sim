@@ -142,7 +142,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     vec2 res = map(ro, rd, t);
     h = max(res.x, RAYMARCH_PRECISION);
     h = res.x;
-    t += max(h * .99, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
+    t += max(h * .8, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
     m = res.y;
     d = float(i);
   }
