@@ -70,7 +70,7 @@ setInterval(function() {
 var ratio = (1/2048);
 var r = Math.floor(cutterRadius / ratio);
 
-var tool = ndarray(new Float32Array((r*2 * r*2) * 4), [r*2*4, r*2*4]);
+var tool = ndarray(new Float32Array((r*2 * r*2)), [r*2, r*2]);
 
 ndfill(tool, function(i, j) {
 
@@ -97,9 +97,10 @@ ndfill(tool, function(i, j) {
     return 0;
   }
 
-  return Math.sqrt(dz * dz - l * l) / r;
+  return (Math.sqrt(dz * dz - l * l) / r)  * cutterRadius
 });
 
+var r2 = r*2;
 var render = function(t) {
   var gl = this.gl;
 
@@ -121,26 +122,28 @@ var render = function(t) {
 
   this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
 
-  var areax = (ctime*1024 + 1024);
-  var areay = (stime*1024 + 1024);
+  var areax = Math.round((ctime*1024 + 1024));
+  var areay = Math.round((stime*1024 + 1024));
 
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
-  ndfill(depthArray, function(i, j) {
-    var orig = depthArray.get(i, j);
 
-    var map = tool.get(i, j);
-    if (map === 0) {
-      return orig;
+  for(var i=0; i<r2; ++i) {
+    for(var j=0; j<r2; ++j) {
+      var orig = depthArray.get(i, j);
+
+      var map = tool.get(i, j);
+      if (map === 0) {
+        continue;
+      }
+
+      var computed = v + map;
+
+      if (computed > orig) {
+        depthArray.set(i, j, computed);
+      }
     }
+  }
 
-    var computed = v + map * (cutterRadius);
-
-    if (computed > orig) {
-      return computed;
-    } else {
-      return orig;
-    }
-  });
 
   this.depthTexture.setPixels(depthArray, areay - r, areax - r);
 

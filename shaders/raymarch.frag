@@ -91,11 +91,6 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     vec3(.5, .1, .5)
   );
 
-  float box2 = solid_box(
-    pos - vec3(0.25, .1, 0.25),
-    vec3(.1, .1, .1)
-  );
-
   float cyl = solid_capsule(
     pos - (cutterPosition + vec3(0.0, (.1 + cutterRadius), 0.0)),
     vec3(.0, .0, 0.01),
@@ -127,7 +122,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
   float h=RAYMARCH_PRECISION;
   float t = 0.0;
   float m = -1.0;
-  float d = 0.0;
+
   for(int i=0; i<RAYMARCH_CYCLES; i++) {
     vec3 pos = ro + rd * t;
     if(h < RAYMARCH_PRECISION) {
@@ -141,16 +136,16 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     vec2 res = map(ro, rd, t);
     h = max(res.x, RAYMARCH_PRECISION);
     h = res.x;
-    t += max(h * .8, -h);
+    t += h * .75;//max(h * .25, -h);
     m = res.y;
-    d = float(i);
+
   }
 
   if (t>maxd) {
     m=-1.0;
   }
 
-  return vec3(t, m, d);
+  return vec3(t, m, dot(t, m));
 }
 
 vec3 render(in vec3 ro, in vec3 rd) {
@@ -160,7 +155,7 @@ vec3 render(in vec3 ro, in vec3 rd) {
   float t = res.x;
   float m = res.y;
   vec3 v = max(calcNormal(ro, rd, t), 1.0 / res);
-  return vec3(dot(clamp(v, 0.2, smoothstep(0.4, .8, min(m, t))), normalize(res)));
+  return vec3(dot(clamp(v, 0.2, smoothstep(0.4, .6, min(m, t))), normalize(res)));
 
   if(m>-0.5) {
 
