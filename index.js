@@ -61,7 +61,7 @@ document.addEventListener('mousemove', function(ev) {
 });
 
 var elapsed = 0;
-var start = Date.now(), first = false, v = -.01;
+var start = Date.now(), first = false, v = -0.1;
 
 setInterval(function() {
   v += .0005;
@@ -73,6 +73,7 @@ var r = Math.floor(cutterRadius / ratio);
 var tool = ndarray(new Float32Array((r*2 * r*2) * 4), [r*2*4, r*2*4]);
 
 ndfill(tool, function(i, j) {
+
   // x difference, where r is the radius of the tool and i is the x coord
   var di = (i - r);
 
@@ -85,16 +86,23 @@ ndfill(tool, function(i, j) {
   // basically this gives us the difference between the center of the
   // ball and the top of the stock
 
-  var dz = r;
+  var dz = Math.sqrt(r * r);
+
 
   // enabling this causes the tool width be roughly 1/2 the expected size
   // var dz = (0.05/ratio) - r;
 
   // compute the distance from 0,0 to x,y
+  //var l = Math.sqrt(di * di + dj * dj);
   var l = Math.sqrt(di * di + dj * dj);
 
-  // compute the depth using pythagorean theorum
-  return Math.sqrt(dz * dz - l * l) / r;
+  if (l > r) {
+    return 0;
+  }
+
+  return 1.0 - (l * r);
+
+  // return 1 - Math.sqrt(dz * dz - l * l) / r;
 });
 
 var render = function(t) {
@@ -113,7 +121,7 @@ var render = function(t) {
   var stime = Math.sin(time)/2;
 
   this.raymarchProgram.uniforms.cutterPosition = [
-    stime/2, -(v + .005), ctime/2
+    stime/2, -v - cutterRadius, ctime/2
   ];
 
   this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
@@ -126,9 +134,13 @@ var render = function(t) {
     var orig = depthArray.get(i, j);
 
     var map = tool.get(i, j);
-    var computed = v * map;
+    if (map === 0) {
+      return orig;
+    }
 
-    if (computed > orig && map > 0) {
+    var computed = v + map * (cutterRadius);
+
+    if (computed > orig) {
       return computed;
     } else {
       return orig;
