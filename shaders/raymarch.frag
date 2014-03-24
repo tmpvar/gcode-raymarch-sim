@@ -138,11 +138,10 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
       break;
     }
 
-    // t += max(h, RAYMARCH_PRECISION);
     vec2 res = map(ro, rd, t);
     h = max(res.x, RAYMARCH_PRECISION);
     h = res.x;
-    t += max(h * .8, -h);// - 2048.0 * RAYMARCH_PRECISION;// * .5 + RAYMARCH_PRECISION;
+    t += max(h * .8, -h);
     m = res.y;
     d = float(i);
   }
@@ -230,11 +229,17 @@ void main(void)
 
 
   vec3 col = render( ro, rd );
-  // if (depth_get(q) >= 1.0) {
-  //   gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-  // } else {
-    col = sqrt( col );
-
-    gl_FragColor = vec4( col, 1.0);
+  /*
+  float qd = depth_get(p);
+  if (qd > 0.0) {
+     gl_FragColor = vec4(qd, 1.0-qd, qd, 1.0);
+  } else {
+  */
+    float clen = length(col);
+    if (clen == 0.0) {
+      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    } else {
+      gl_FragColor = vec4(sqrt(col), 1.0);
+    }
   //}
 }

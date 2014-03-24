@@ -89,20 +89,15 @@ ndfill(tool, function(i, j) {
   var dz = Math.sqrt(r * r);
 
 
-  // enabling this causes the tool width be roughly 1/2 the expected size
-  // var dz = (0.05/ratio) - r;
 
   // compute the distance from 0,0 to x,y
-  //var l = Math.sqrt(di * di + dj * dj);
   var l = Math.sqrt(di * di + dj * dj);
 
   if (l > r) {
     return 0;
   }
 
-  return 1.0 - (l * r);
-
-  // return 1 - Math.sqrt(dz * dz - l * l) / r;
+  return Math.sqrt(dz * dz - l * l) / r;
 });
 
 var render = function(t) {
@@ -126,8 +121,8 @@ var render = function(t) {
 
   this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
 
-  var areax = (Math.floor(ctime*1024) + 1024);
-  var areay = (Math.floor(stime*1024) + 1024);
+  var areax = (ctime*1024 + 1024);
+  var areay = (stime*1024 + 1024);
 
   var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
   ndfill(depthArray, function(i, j) {
