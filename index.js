@@ -117,7 +117,7 @@ var render = function(t) {
   var stime = Math.sin(time)/2;
 
   this.raymarchProgram.uniforms.cutterPosition = [
-    stime/2, -v - cutterRadius, ctime/2
+    stime/2, ctime/2, -v - cutterRadius
   ];
 
   this.raymarchProgram.uniforms.cutterRadius = cutterRadius;

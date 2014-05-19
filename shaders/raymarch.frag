@@ -4,7 +4,7 @@ precision highp float;
 
 #define M_PI 3.141593
 #define RAYMARCH_CYCLES 256
-#define RAYMARCH_PRECISION 0.000001
+#define RAYMARCH_PRECISION 0.0000001
 
 uniform float time;
 uniform float depth_stride;
@@ -37,12 +37,12 @@ float solid_box(vec3 p, vec3 b) {
 float solid_depthmap(vec3 p, float amount) {
   float r = 1.0/2048.0;
 
-  if (abs(p.x) > .5 || abs(p.z) > .5) {
+  if (abs(p.x) > .5 || abs(p.y) > .5) {
     return RAYMARCH_PRECISION/10.0;
   }
 
-  vec2 pos = floor(p.xz * 2048.0) / 2048.0;
-  float depth = depth_get(p.xz + 0.5);
+  vec2 pos = floor(p.xy * 2048.0) / 2048.0;
+  float depth = depth_get(p.xy + 0.5);
 
   if (depth == 0.0) {
     return min(amount, RAYMARCH_PRECISION);
@@ -51,8 +51,8 @@ float solid_depthmap(vec3 p, float amount) {
   float d = r*10.0 ;//* 2.25;
 
   return solid_box(
-    p - vec3(pos.x, 0.1, pos.y),
-    vec3(d, depth, d)
+    p - vec3(pos.x, pos.y, 0.1),
+    vec3(d, d, depth)
   );
 }
 
@@ -82,19 +82,19 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   vec3 pos = origin + dir * amount;
 
-  if (pos.y < 0.0) {
+  if (pos.z < 0.0) {
     return vec2(RAYMARCH_PRECISION * .99, -1.0);
   }
 
   float box = solid_box(
     pos,
-    vec3(.5, .1, .5)
+    vec3(.5, .5, .1)
   );
 
   float cyl = solid_capsule(
-    pos - (cutterPosition + vec3(0.0, (.1 + cutterRadius), 0.0)),
-    vec3(.0, .0, 0.01),
-    vec3(.0, .5, 0.01),
+    pos - (cutterPosition + vec3(0.0, 0.0, (.1 + cutterRadius))),
+    vec3(0.0, 0.01, 0.0),
+    vec3(0.0, 0.01, 0.5),
     cutterRadius
   );
 
@@ -206,7 +206,7 @@ void main(void)
 
 
   // camera
-  vec3 ro = vec3(1.0 + sin(6.0 * mo.x), -3.0 + 6.0 * mo.y, 0.0);
+  vec3 ro = vec3(1.0 + sin(6.0 * mo.x), 0.0, 3.0 * mo.y);
   // vec3 ro = vec3(
   //   -1.0+3.2*cos(0.1*time + 6.0*mo.x),
   //   1.0 + 3.0*mo.y,
@@ -217,7 +217,7 @@ void main(void)
 
   // camera tx
   vec3 cw = normalize( ta-ro );
-  vec3 cp = vec3( 0.0, 1.0, 0.0 );
+  vec3 cp = vec3( 0.0, 0.0, 1.0 );
   vec3 cu = normalize( cross(cw,cp) );
   vec3 cv = normalize( cross(cu,cw) );
   vec3 rd = normalize( p.x*cu + p.y*cv + 2.5*cw );
