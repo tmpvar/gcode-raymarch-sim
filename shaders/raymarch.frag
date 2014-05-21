@@ -34,6 +34,26 @@ float solid_box(vec3 p, vec3 b) {
 }
 
 
+float pointseg_distance(in vec3 start, in vec3 end, in vec3 point) {
+  vec3 c = point - start; // Vector from a to Point
+  vec3 v = normalize(end - start); // Unit Vector from a to b
+  float d = length(end - start); // Length of the line segment
+  float t = dot(v, c);  // Intersection point Distance from a
+
+  // Check to see if the point is on the line
+  // if not then return the endpoint
+  if(t < 0.0) {
+    return distance(start, point);
+  }
+
+  if(t > d) {
+    return distance(end, point);
+  }
+
+  // move from point a to the nearest point on the segment
+  return distance(start + (v * t), point);
+}
+
 float solid_depthmap(vec3 p, float amount) {
   float r = 1.0/2048.0;
 
