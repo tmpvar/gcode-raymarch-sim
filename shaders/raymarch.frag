@@ -230,11 +230,11 @@ void main(void)
      gl_FragColor = vec4(qd, 1.0-qd, qd, 1.0);
   } else {
   */
-    float clen = length(col);
-    if (clen == 0.0) {
-      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    } else {
+    // float clen = length(col);
+    // if (clen == 0.0) {
+    //   gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    // } else {
       gl_FragColor = vec4(sqrt(col), 1.0);
-    }
+    // }
   //}
 }
