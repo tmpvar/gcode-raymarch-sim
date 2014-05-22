@@ -16,6 +16,7 @@ function GcodeRaymarchSimulator() {
   this._stockTop = 0;
   this._stockDimensions = [0,0,0];
   this._stockPosition = [0,0,0];
+  this._cutterPosition = [0,0,0];
 }
 
 GcodeRaymarchSimulator.prototype.init = function(gl) {
@@ -60,22 +61,14 @@ GcodeRaymarchSimulator.prototype.render = function(gl, dt) {
   //Set viewport
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 
-
   this.raymarchProgram.uniforms.resolution = [
     gl.drawingBufferWidth,
     gl.drawingBufferHeight
   ];
 
   this.raymarchProgram.uniforms.mouse = this._mouse;
+  this.raymarchProgram.uniforms.cutterPosition = this._cutterPosition;
 
-  var time = this.raymarchProgram.uniforms.time = Date.now()/1000;
-
-  var ctime = Math.cos(time)/2;
-  var stime = Math.sin(time)/2;
-
-  this.raymarchProgram.uniforms.cutterPosition = [
-    stime/2, ctime/2, - this._v -this._cutterRadius
-  ];
 
   this.raymarchProgram.uniforms.cutterRadius = this._cutterRadius;
 
@@ -83,30 +76,54 @@ GcodeRaymarchSimulator.prototype.render = function(gl, dt) {
   this.raymarchProgram.uniforms.stockPosition = this._stockPosition;
   this.raymarchProgram.uniforms.stockTop = this._stockTop;
 
-  var max = Math.max;
-  var min = Math.min;
 
-  var areax =  Math.round(ctime*1024) + 1024;
-  var areay = Math.round(stime*1024) + 1024;
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+};
+
+
+GcodeRaymarchSimulator.prototype.moveTool = function(x, y, z) {
+  var sx = this.scaleValue(x);
+  var sy = this.scaleValue(y);
+  var sz = this.scaleValue(z);
+
+  var time = this.raymarchProgram.uniforms.time = Date.now()/1000;
+
+  var ctime = Math.cos(time)/2;
+  var stime = Math.sin(time)/2;
+
+
+  this._physicalCutterPosition = [x, y, z];
+  var stockDimensions = this._stockDimensions;
+  this._cutterPosition = [sx, sy, sz].map(function(a, i) {
+    return a - stockDimensions[i]/2;
+  });
+
+  this._cutterPosition[2] = this._v + (-sz);
+
+  if (z > 0) {
+    return;
+  }
 
   var r = this._cutterRadius / this._ratio;
+  var rx = Math.round(sy * 2048);
+  var ry = Math.round(sx * 2048);
+  var rz = Math.round(sz * 2048);
 
   var depthArray = this.depthArray
-                       .hi(areax+r, areay+r)
-                       .lo(areax-r, areay-r);
+                       .hi(rx+r, ry+r)
+                       .lo(rx-r, ry-r);
 
-  this._v += .0001;
   var r2 = r*2;
 
   for(var i=0; i<r2; ++i) {
     for(var j=0; j<r2; ++j) {
       var orig = depthArray.get(i, j);
       var map = this._tool.get(i, j);
-      if (map === 0) {
+      if (map === 0 || isNaN(map)) {
         continue;
       }
 
-      var computed = this._v + map;
+      var computed = this._v+(-sz)+map;
 
       if (computed > orig) {
         depthArray.set(i, j, computed);
@@ -116,12 +133,11 @@ GcodeRaymarchSimulator.prototype.render = function(gl, dt) {
 
   this.depthTexture.setPixels(
     depthArray,
-    max(areay - r, 1),
-    max(areax - r, 1)
+    Math.max(ry - r, 1),
+    Math.max(rx - r, 1)
   );
 
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-};
+}
 
 GcodeRaymarchSimulator.prototype.tool = function(ndarray) {
   this._tool = ndarray;
@@ -150,12 +166,15 @@ GcodeRaymarchSimulator.prototype.stockDimensions = function(x, y, z) {
   });
 
   this._stockTop = this._stockDimensions[2] + this._stockPosition[2];
-
-    this._v = this._stockPosition[2]-this._stockDimensions[2]/2 - this._cutterRadius;
+  this._v = this._stockPosition[2]-this._stockDimensions[2]/2 - this._cutterRadius;
 }
 
 GcodeRaymarchSimulator.prototype.scaleValue = function(units) {
-  return units/this._scale;
+  if (Array.isArray(units)) {
+    return units.map(this.scaleValue.bind(this));
+  } else {
+    return units/this._scale;
+  }
 };
 
 GcodeRaymarchSimulator.prototype.cutterRadius = function(units) {

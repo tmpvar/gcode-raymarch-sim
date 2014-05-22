@@ -1,4 +1,4 @@
-var GcodeRaymarchSimulator = require('./simulator')
+var GcodeRaymarchSimulator = require('./simulator');
 
 var ndarray = require('ndarray');
 var ndfill = require('ndarray-fill');
@@ -6,14 +6,14 @@ var ndfill = require('ndarray-fill');
 var fc = require('fc');
 var domready = require('domready');
 
-var sim = new GcodeRaymarchSimulator();
+var sim = window.simulator = new GcodeRaymarchSimulator();
 
-var cutterRadius = sim.scaleValue(sim.cutterRadius(3.175));
-sim.stockDimensions(10, 50, 25);
+var cutterRadius = sim.scaleValue(sim.cutterRadius(1));
+sim.stockDimensions(100, 100, 20);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
-var tool = ndarray(new Float32Array((r2* r2)), [r2, r2]);
+var tool = ndarray(new Float32Array(r2 * r2), [r2, r2]);
 
 ndfill(tool, function(i, j) {
 
@@ -22,13 +22,6 @@ ndfill(tool, function(i, j) {
 
   // y difference
   var dj = (j - r);
-
-  // this is weird because we have to convert the top of the stock,
-  // known to be at 0.05 in the "world"
-  //
-  // basically this gives us the difference between the center of the
-  // ball and the top of the stock
-
   var dz = Math.sqrt(r * r);
 
   // compute the distance from 0,0 to x,y
@@ -48,6 +41,17 @@ sim.mouse(0, window.innerHeight);
 document.addEventListener('mousemove', function(ev) {
   sim.mouse(ev.clientX, ev.clientY);
 });
+
+cz = 0;
+setInterval(function() {
+  cz -= 0.0001;
+  var time = Date.now()/1000;
+  var cx = 10 + Math.sin(time)*10;
+  var cy = 10 + Math.cos(time)*10;
+  sim.moveTool(cx, cy, cz)
+
+}, 0)
+
 
 domready(function() {
   var gl = fc(function(dt) {
