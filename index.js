@@ -11,7 +11,19 @@ var createRaymarchProgram = glslify({
   fragment: './shaders/raymarch.frag'
 });
 
-var cutterRadius = 0.1;
+// Physical representation (in mm)
+var physicalCutterRadius = 3.175;
+var physicalStockDimensions = [100, 100, 10];
+
+
+// Simulation vars
+var simScale = 100;
+var scaleToSim = function(a) {
+  return a/simScale;
+};
+
+var cutterRadius = physicalCutterRadius/simScale;
+var stockDimensions = physicalStockDimensions.map(scaleToSim);
 
 var mouse = [0, window.innerHeight];
 document.addEventListener('mousemove', function(ev) {
@@ -24,13 +36,9 @@ var start = Date.now();
 var first = false;
 var v = -0.05 - cutterRadius/2;
 
-// setInterval(function() {
-//   v += .0005;
-// }, 100);
-
 var ratio = (1/2048);
-var r = Math.floor(cutterRadius / ratio);
 
+var r = Math.floor(cutterRadius / ratio);
 var tool = ndarray(new Float32Array((r*2 * r*2)), [r*2, r*2]);
 
 ndfill(tool, function(i, j) {
@@ -56,7 +64,7 @@ ndfill(tool, function(i, j) {
     return 0;
   }
 
-  return (Math.sqrt(dz * dz - l * l) / r) * cutterRadius
+  return (Math.sqrt(dz * dz - l * l) / r) * cutterRadius;
 });
 
 domready(function() {
@@ -118,6 +126,8 @@ domready(function() {
     ];
 
     this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
+
+    this.raymarchProgram.uniforms.stockDimensions = stockDimensions;
 
     var max = Math.max;
     var min = Math.min;

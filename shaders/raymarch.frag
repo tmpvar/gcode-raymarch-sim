@@ -12,9 +12,11 @@ uniform vec2 mouse;
 uniform vec2 resolution;
 uniform sampler2D depth;
 
-uniform vec3 cutterPosition;// = vec3(0, 0.25, .2);
-//uniform float cutterRadius;// = .05;
-uniform float cutterRadius;// = .05;
+uniform vec3 cutterPosition;
+uniform float cutterRadius;
+
+// stock uniforms
+uniform vec3 stockDimensions;
 
 float depth_get(in vec2 uv) {
   return texture2D(depth, uv).x;
@@ -108,7 +110,7 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   float box = solid_box(
     pos,
-    vec3(.5, .5, .1)
+    stockDimensions
   );
 
   float cyl = solid_capsule(
