@@ -17,6 +17,7 @@ uniform float cutterRadius;
 
 // stock uniforms
 uniform vec3 stockDimensions;
+uniform float stockTop;
 
 float depth_get(in vec2 uv) {
   return texture2D(depth, uv).x;
@@ -73,7 +74,7 @@ float solid_depthmap(vec3 p, float amount) {
   float d = r*10.0 ;//* 2.25;
 
   return solid_box(
-    p - vec3(pos.x, pos.y, 0.1),
+    p - vec3(pos.x, pos.y, stockTop),
     vec3(d, d, depth)
   );
 }
@@ -114,7 +115,7 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
   );
 
   float cyl = solid_capsule(
-    pos - (cutterPosition + vec3(0.0, 0.0, (.1 + cutterRadius))),
+    pos - (cutterPosition + vec3(0.0, 0.0, (stockTop + cutterRadius))),
     vec3(0.0, 0.01, 0.0),
     vec3(0.0, 0.01, 0.5),
     cutterRadius
@@ -178,45 +179,6 @@ vec3 render(in vec3 ro, in vec3 rd) {
   float m = res.y;
   vec3 v = max(calcNormal(ro, rd, t), 1.0 / res);
   return vec3(dot(clamp(v, 0.2, smoothstep(0.4, .6, min(m, t))), normalize(res)));
-
-  if(m>-0.5) {
-
-    vec3 pos = ro + t*rd;
-    vec3 nor = calcNormal(ro, rd, t);
-    //vec3 nor = calcNormal(ro, vec3(-0.05, -.5, 0.0), t);
-
-    col = vec3(0.6) + 2.0*sin(vec3(0.05,0.08,0.10)*(m-1.0));
-    //col = vec3(0.5) + 0.2*sin(vec3(0.05,0.08,0.10)*(m-1.0));
-
-    //float ao = calcAO(pos, nor);
-
-    vec3 lig = normalize(vec3(-0.6, 0.7, -0.5));
-    float amb = clamp(0.5+0.5*nor.y, 0.0, 1.0);
-    float dif = clamp(dot(nor, lig), 0.0, 1.0);
-    float bac = clamp(
-      dot(nor, normalize(vec3(-lig.x, 0.0, -lig.z))), 0.0, 1.0
-    ) * clamp(1.0 - pos.y,0.0,1.0);
-
-    float sh = 1.0;
-    // if(dif>0.02) {
-    //   sh = softshadow(pos, lig, 0.02, 10.0, 7.0);
-    //   dif *= sh;
-    // }
-
-    vec3 brdf = vec3(0.0);
-    brdf += 0.20*amb*vec3(0.10,0.11,0.13);//*ao;
-    brdf += 0.20*bac*vec3(0.15,0.15,0.15);//*ao;
-    brdf += 1.20*dif*vec3(1.00,0.90,0.70);
-
-    float pp = clamp(dot(reflect(rd,nor), lig), 0.0, 1.0);
-    float spe = sh*pow(pp,16.0);
-    float fre = pow(clamp(1.0+dot(nor,rd),0.0,1.0), 2.0);//*ao;
-
-    col = col*brdf + vec3(1.0)*col*spe + 0.2*fre*(0.5+0.5*col);
-  }
-
-  col *= exp(-0.0001*t*t);
-  return max(1.0 / vec3(res.z), vec3(clamp(col,0.0,0.5)));
 }
 
 void main(void)
@@ -229,12 +191,6 @@ void main(void)
 
   // camera
   vec3 ro = vec3(1.0 + sin(6.0 * mo.x), 0.0, 3.0 * mo.y);
-  // vec3 ro = vec3(
-  //   -1.0+3.2*cos(0.1*time + 6.0*mo.x),
-  //   1.0 + 3.0*mo.y,
-  //   -1.0 + 3.2*sin(0.1*time + 6.0*mo.x)
-  // );
-
   vec3 ta = vec3(0.0, 0.0, 0.0);//vec3( -0.5, -0.2, 0.5 );
 
   // camera tx
