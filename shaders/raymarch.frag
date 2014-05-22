@@ -17,6 +17,7 @@ uniform float cutterRadius;
 
 // stock uniforms
 uniform vec3 stockDimensions;
+uniform vec3 stockPosition;
 uniform float stockTop;
 
 float depth_get(in vec2 uv) {
@@ -110,7 +111,7 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
   }
 
   float box = solid_box(
-    pos,
+    pos - stockPosition,
     stockDimensions
   );
 

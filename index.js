@@ -13,7 +13,7 @@ var createRaymarchProgram = glslify({
 
 // Physical representation (in mm)
 var physicalCutterRadius = 3.175;
-var physicalStockDimensions = [10, 100, 20];
+var physicalStockDimensions = [10, 50, 25];
 
 // Simulation vars
 var simScale = 100;
@@ -23,7 +23,11 @@ var scaleToSim = function(a) {
 
 var cutterRadius = physicalCutterRadius/simScale;
 var stockDimensions = physicalStockDimensions.map(scaleToSim);
-var stockTop = stockDimensions[2];
+var stockPosition = stockDimensions.map(function(a) {
+  return a/2;
+});
+
+var stockTop = stockDimensions[2] + stockPosition[2];
 
 var mouse = [0, window.innerHeight];
 document.addEventListener('mousemove', function(ev) {
@@ -34,7 +38,7 @@ document.addEventListener('mousemove', function(ev) {
 var elapsed = 0;
 var start = Date.now();
 var first = false;
-var v = -stockTop/2 + cutterRadius;
+var v = stockPosition[2]-stockDimensions[2]/2 - cutterRadius;
 
 var ratio = (1/2048);
 
@@ -128,6 +132,7 @@ domready(function() {
     this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
 
     this.raymarchProgram.uniforms.stockDimensions = stockDimensions;
+    this.raymarchProgram.uniforms.stockPosition = stockPosition;
     this.raymarchProgram.uniforms.stockTop = stockTop;
 
     var max = Math.max;
