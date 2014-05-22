@@ -20,7 +20,9 @@ document.addEventListener('mousemove', function(ev) {
 });
 
 var elapsed = 0;
-var start = Date.now(), first = false, v = -0.1;
+var start = Date.now();
+var first = false;
+var v = -0.05 - cutterRadius/2;
 
 // setInterval(function() {
 //   v += .0005;
@@ -54,7 +56,7 @@ ndfill(tool, function(i, j) {
     return 0;
   }
 
-  return (Math.sqrt(dz * dz - l * l) / r)  * cutterRadius
+  return (Math.sqrt(dz * dz - l * l) / r) * cutterRadius
 });
 
 domready(function() {
@@ -117,10 +119,16 @@ domready(function() {
 
     this.raymarchProgram.uniforms.cutterRadius = cutterRadius;
 
-    var areax = Math.round((ctime*1024 + 1024));
-    var areay = Math.round((stime*1024 + 1024));
+    var max = Math.max;
+    var min = Math.min;
 
-    var depthArray = this.depthArray.hi(areax+r, areay+r).lo(areax-r, areay-r);
+    var areax =  Math.round(ctime*1024) + 1024;
+    var areay = Math.round(stime*1024) + 1024;
+
+    var depthArray = this.depthArray
+                         .hi(areax+r, areay+r)
+                         .lo(areax-r, areay-r);
+
     v += .0001;
     for(var i=0; i<r2; ++i) {
       for(var j=0; j<r2; ++j) {
@@ -138,7 +146,11 @@ domready(function() {
       }
     }
 
-    this.depthTexture.setPixels(depthArray, areay - r, areax - r);
+    this.depthTexture.setPixels(
+      depthArray,
+      max(areay - r, 1),
+      max(areax - r, 1)
+    );
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
