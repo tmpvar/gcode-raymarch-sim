@@ -9,7 +9,7 @@ var domready = require('domready');
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
 var cutterRadius = sim.scaleValue(sim.cutterRadius(1));
-sim.stockDimensions(100, 100, 20);
+sim.stockDimensions(50, 50, 30);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -44,13 +44,12 @@ document.addEventListener('mousemove', function(ev) {
 
 cz = 0;
 setInterval(function() {
-  cz -= 0.0001;
+  cz -= 0.001;
   var time = Date.now()/1000;
   var cx = 10 + Math.sin(time)*10;
   var cy = 10 + Math.cos(time)*10;
   sim.moveTool(cx, cy, cz)
-
-}, 0)
+}, 0);
 
 
 domready(function() {

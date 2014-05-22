@@ -66,16 +66,16 @@ float solid_depthmap(vec3 p, float amount) {
   }
 
   vec2 pos = floor(p.xy * 2048.0) / 2048.0;
-  float depth = depth_get(p.xy + 0.5);
+  float depth = depth_get(p.xy + (stockPosition.xy - stockDimensions.xy/2.0));
 
   if (depth == 0.0) {
     return min(amount, RAYMARCH_PRECISION);
   }
 
-  float d = r*10.0 ;//* 2.25;
+  float d = r*10.0;//* 2.25;
 
   return solid_box(
-    p - vec3(pos.x, pos.y, stockTop),
+    p - vec3(p.xy, stockTop),
     vec3(d, d, depth)
   );
 }
@@ -112,11 +112,17 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
 
   float box = solid_box(
     pos - stockPosition,
-    stockDimensions
+    stockDimensions/2.0
   );
 
+  // float cyl = solid_capsule(
+  //   pos - stockPosition - vec3(cutterPosition.xy, -cutterPosition.z  + cutterRadius),
+  //   vec3(0.0, 0.01, 0.0),
+  //   vec3(0.0, 0.01, 0.5),
+  //   cutterRadius
+  // );
   float cyl = solid_capsule(
-    pos - (cutterPosition + vec3(0.0, 0.0, (stockTop + cutterRadius))),
+    pos - stockPosition - vec3(cutterPosition.xy, (stockDimensions.z + cutterRadius) - cutterPosition.z),
     vec3(0.0, 0.01, 0.0),
     vec3(0.0, 0.01, 0.5),
     cutterRadius

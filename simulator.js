@@ -166,7 +166,7 @@ GcodeRaymarchSimulator.prototype.stockDimensions = function(x, y, z) {
   });
 
   this._stockTop = this._stockDimensions[2] + this._stockPosition[2];
-  this._v = this._stockPosition[2]-this._stockDimensions[2]/2 - this._cutterRadius;
+  this._v = this._stockPosition[2] - this._cutterRadius;
 }
 
 GcodeRaymarchSimulator.prototype.scaleValue = function(units) {
