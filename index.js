@@ -8,8 +8,8 @@ var domready = require('domready');
 
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
-var cutterRadius = sim.scaleValue(sim.cutterRadius(1));
-sim.stockDimensions(50, 50, 30);
+var cutterRadius = sim.scaleValue(sim.cutterRadius(1.25));
+sim.stockDimensions(20, 50, 10);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -46,8 +46,8 @@ cz = 0;
 setInterval(function() {
   cz -= 0.001;
   var time = Date.now()/1000;
-  var cx = 10 + Math.sin(time)*10;
-  var cy = 10 + Math.cos(time)*10;
+  var cx = 20 + Math.sin(time)*10;
+  var cy = 20 + Math.cos(time)*10;
   sim.moveTool(cx, cy, cz)
 }, 0);
 

@@ -115,16 +115,10 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
     stockDimensions/2.0
   );
 
-  // float cyl = solid_capsule(
-  //   pos - stockPosition - vec3(cutterPosition.xy, -cutterPosition.z  + cutterRadius),
-  //   vec3(0.0, 0.01, 0.0),
-  //   vec3(0.0, 0.01, 0.5),
-  //   cutterRadius
-  // );
   float cyl = solid_capsule(
-    pos - stockPosition - vec3(cutterPosition.xy, (stockDimensions.z + cutterRadius) - cutterPosition.z),
-    vec3(0.0, 0.01, 0.0),
-    vec3(0.0, 0.01, 0.5),
+    pos - stockPosition - vec3(cutterPosition.xy, (stockDimensions.z - cutterRadius/2.0) - cutterPosition.z),
+    vec3(0.0, 0.0, 0.0),
+    vec3(0.0, 0.0, 0.25),
     cutterRadius
   );
 

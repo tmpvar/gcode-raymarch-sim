@@ -136,8 +136,7 @@ GcodeRaymarchSimulator.prototype.moveTool = function(x, y, z) {
     Math.max(ry - r, 1),
     Math.max(rx - r, 1)
   );
-
-}
+};
 
 GcodeRaymarchSimulator.prototype.tool = function(ndarray) {
   this._tool = ndarray;
