@@ -3,7 +3,7 @@ precision highp float;
 #endif
 
 #define M_PI 3.141593
-#define RAYMARCH_CYCLES 256
+#define RAYMARCH_CYCLES 128
 #define RAYMARCH_PRECISION 0.0000001
 
 uniform float time;
@@ -61,9 +61,9 @@ float pointseg_distance(in vec3 start, in vec3 end, in vec3 point) {
 float solid_depthmap(vec3 p, float amount) {
   float r = 1.0/2048.0;
 
-  if (abs(p.x) > .5 || abs(p.y) > .5) {
-    return RAYMARCH_PRECISION/10.0;
-  }
+  // if (abs(p.x) > .5 || abs(p.y) > .5) {
+  //   return RAYMARCH_PRECISION/10.0;
+  // }
 
   vec2 pos = floor(p.xy * 2048.0) / 2048.0;
   float depth = depth_get(p.xy + (stockPosition.xy - stockDimensions.xy/2.0));

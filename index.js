@@ -1,15 +1,15 @@
 var GcodeRaymarchSimulator = require('./simulator');
-
+var skateboard = require('skateboard');
 var ndarray = require('ndarray');
 var ndfill = require('ndarray-fill');
-
+var split = require('split');
 var fc = require('fc');
 var domready = require('domready');
 
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
 var cutterRadius = sim.scaleValue(sim.cutterRadius(1.25));
-sim.stockDimensions(20, 50, 10);
+sim.stockDimensions(70, 70, 12);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -42,15 +42,36 @@ document.addEventListener('mousemove', function(ev) {
   sim.mouse(ev.clientX, ev.clientY);
 });
 
-cz = 0;
-setInterval(function() {
-  cz -= 0.001;
-  var time = Date.now()/1000;
-  var cx = 20 + Math.sin(time)*10;
-  var cy = 20 + Math.cos(time)*10;
-  sim.moveTool(cx, cy, cz)
-}, 0);
 
+
+if (window.location.search.indexOf('skate=true') > -1) {
+  var numeric = function(a) {
+    return typeof a === 'number';
+  }
+
+  skateboard(function(stream) {
+    stream.write('ready\n');
+
+    stream.on('data', function(d) {
+      try {
+        var obj = JSON.parse(d);
+        if (obj.x !== null) {
+          sim.moveTool(obj.x, obj.y, obj.z);
+        }
+      } catch(e) {}
+    });
+
+  });
+} else {
+  cz = 0;
+  setInterval(function() {
+    cz -= 0.001;
+    var time = Date.now()/1000;
+    var cx = 20 + Math.sin(time)*10;
+    var cy = 20 + Math.cos(time)*10;
+    sim.moveTool(cx, cy, cz)
+  }, 0);
+}
 
 domready(function() {
   var gl = fc(function(dt) {
