@@ -11,7 +11,8 @@
     "vec2": "^1.5.0",
     "domready": "^1.0.5",
     "fc": "^0.2.0",
-    "grbl-simulator": "git://github.com/tmpvar/grbl-simulator"
+    "grbl-simulator": "git://github.com/tmpvar/grbl-simulator",
+    "skateboard": "^0.2.9"
   },
   "devDependencies": {
     "beefy": "^1.1.0",
