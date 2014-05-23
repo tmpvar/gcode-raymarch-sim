@@ -6,11 +6,12 @@ var ndfill = require('ndarray-fill');
 var split = require('split');
 var fc = require('fc');
 var domready = require('domready');
-
+var qs = require('querystring');
+var search = qs.parse(window.location.search.replace('?', ''));
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
-var cutterRadius = sim.scaleValue(sim.cutterRadius(1.25));
-sim.stockDimensions(70, 70, 12);
+var cutterRadius = sim.scaleValue(sim.cutterRadius(parseFloat(search.diameter || 1.25)/2));
+sim.stockDimensions(70, 70, 25);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -45,7 +46,7 @@ document.addEventListener('mousemove', function(ev) {
 
 
 
-if (window.location.search.indexOf('skate=true') > -1) {
+if (search.skate) {
   var numeric = function(a) {
     return typeof a === 'number';
   }
@@ -84,7 +85,7 @@ domready(function() {
   gl.start();
 });
 
-},{"./simulator":37,"domready":2,"fc":3,"ndarray":31,"ndarray-fill":22,"skateboard":33,"split":35}],2:[function(require,module,exports){
+},{"./simulator":37,"domready":2,"fc":3,"ndarray":31,"ndarray-fill":22,"querystring":46,"skateboard":33,"split":35}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -7314,7 +7315,7 @@ Skateboard.prototype.end = function() {
 
 module.exports = Skateboard;
 
-},{"stream":45,"util":53}],35:[function(require,module,exports){
+},{"stream":48,"util":56}],35:[function(require,module,exports){
 //filter will reemit the data if cb(err,pass) pass is truthy
 
 // reduce is more tricky
@@ -7379,7 +7380,7 @@ function split (matcher, mapper, options) {
 }
 
 
-},{"string_decoder":51,"through":36}],36:[function(require,module,exports){
+},{"string_decoder":54,"through":36}],36:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -7491,7 +7492,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require("/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"stream":45}],37:[function(require,module,exports){
+},{"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"stream":48}],37:[function(require,module,exports){
 var glslify = require("glslify");
 var ndarray = require("ndarray");
 var createTexture = require("gl-texture2d");
@@ -9358,6 +9359,185 @@ process.chdir = function (dir) {
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+'use strict';
+
+// If obj.hasOwnProperty has been overridden, then calling
+// obj.hasOwnProperty(prop) will break.
+// See: https://github.com/joyent/node/issues/1707
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+module.exports = function(qs, sep, eq, options) {
+  sep = sep || '&';
+  eq = eq || '=';
+  var obj = {};
+
+  if (typeof qs !== 'string' || qs.length === 0) {
+    return obj;
+  }
+
+  var regexp = /\+/g;
+  qs = qs.split(sep);
+
+  var maxKeys = 1000;
+  if (options && typeof options.maxKeys === 'number') {
+    maxKeys = options.maxKeys;
+  }
+
+  var len = qs.length;
+  // maxKeys <= 0 means that we should not limit keys count
+  if (maxKeys > 0 && len > maxKeys) {
+    len = maxKeys;
+  }
+
+  for (var i = 0; i < len; ++i) {
+    var x = qs[i].replace(regexp, '%20'),
+        idx = x.indexOf(eq),
+        kstr, vstr, k, v;
+
+    if (idx >= 0) {
+      kstr = x.substr(0, idx);
+      vstr = x.substr(idx + 1);
+    } else {
+      kstr = x;
+      vstr = '';
+    }
+
+    k = decodeURIComponent(kstr);
+    v = decodeURIComponent(vstr);
+
+    if (!hasOwnProperty(obj, k)) {
+      obj[k] = v;
+    } else if (isArray(obj[k])) {
+      obj[k].push(v);
+    } else {
+      obj[k] = [obj[k], v];
+    }
+  }
+
+  return obj;
+};
+
+var isArray = Array.isArray || function (xs) {
+  return Object.prototype.toString.call(xs) === '[object Array]';
+};
+
+},{}],45:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+'use strict';
+
+var stringifyPrimitive = function(v) {
+  switch (typeof v) {
+    case 'string':
+      return v;
+
+    case 'boolean':
+      return v ? 'true' : 'false';
+
+    case 'number':
+      return isFinite(v) ? v : '';
+
+    default:
+      return '';
+  }
+};
+
+module.exports = function(obj, sep, eq, name) {
+  sep = sep || '&';
+  eq = eq || '=';
+  if (obj === null) {
+    obj = undefined;
+  }
+
+  if (typeof obj === 'object') {
+    return map(objectKeys(obj), function(k) {
+      var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
+      if (isArray(obj[k])) {
+        return obj[k].map(function(v) {
+          return ks + encodeURIComponent(stringifyPrimitive(v));
+        }).join(sep);
+      } else {
+        return ks + encodeURIComponent(stringifyPrimitive(obj[k]));
+      }
+    }).join(sep);
+
+  }
+
+  if (!name) return '';
+  return encodeURIComponent(stringifyPrimitive(name)) + eq +
+         encodeURIComponent(stringifyPrimitive(obj));
+};
+
+var isArray = Array.isArray || function (xs) {
+  return Object.prototype.toString.call(xs) === '[object Array]';
+};
+
+function map (xs, f) {
+  if (xs.map) return xs.map(f);
+  var res = [];
+  for (var i = 0; i < xs.length; i++) {
+    res.push(f(xs[i], i));
+  }
+  return res;
+}
+
+var objectKeys = Object.keys || function (obj) {
+  var res = [];
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) res.push(key);
+  }
+  return res;
+};
+
+},{}],46:[function(require,module,exports){
+'use strict';
+
+exports.decode = exports.parse = require('./decode');
+exports.encode = exports.stringify = require('./encode');
+
+},{"./decode":44,"./encode":45}],47:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 // a duplex stream is just a stream that is both readable and writable.
 // Since JS doesn't have multiple prototypal inheritance, this class
 // prototypally inherits from Readable, and then parasitically from
@@ -9410,7 +9590,7 @@ function onend() {
   });
 }
 
-},{"./readable.js":48,"./writable.js":50,"inherits":42,"process/browser.js":46}],45:[function(require,module,exports){
+},{"./readable.js":51,"./writable.js":53,"inherits":42,"process/browser.js":49}],48:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9539,9 +9719,9 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"./duplex.js":44,"./passthrough.js":47,"./readable.js":48,"./transform.js":49,"./writable.js":50,"events":41,"inherits":42}],46:[function(require,module,exports){
+},{"./duplex.js":47,"./passthrough.js":50,"./readable.js":51,"./transform.js":52,"./writable.js":53,"events":41,"inherits":42}],49:[function(require,module,exports){
 module.exports=require(43)
-},{}],47:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9584,7 +9764,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./transform.js":49,"inherits":42}],48:[function(require,module,exports){
+},{"./transform.js":52,"inherits":42}],51:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -10521,7 +10701,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require("/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./index.js":45,"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"buffer":38,"events":41,"inherits":42,"process/browser.js":46,"string_decoder":51}],49:[function(require,module,exports){
+},{"./index.js":48,"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"buffer":38,"events":41,"inherits":42,"process/browser.js":49,"string_decoder":54}],52:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10727,7 +10907,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./duplex.js":44,"inherits":42}],50:[function(require,module,exports){
+},{"./duplex.js":47,"inherits":42}],53:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -11115,7 +11295,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"./index.js":45,"buffer":38,"inherits":42,"process/browser.js":46}],51:[function(require,module,exports){
+},{"./index.js":48,"buffer":38,"inherits":42,"process/browser.js":49}],54:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -11308,14 +11488,14 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":38}],52:[function(require,module,exports){
+},{"buffer":38}],55:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],53:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -11905,4 +12085,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require("/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":52,"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"inherits":42}]},{},[1])
+},{"./support/isBuffer":55,"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":43,"inherits":42}]},{},[1])

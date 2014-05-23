@@ -15,11 +15,12 @@ if (typeof argv.i !== 'undefined') {
   var stream = null;
   skateboard({
     port: port,
+    dir: __dirname + '/../public'
   }, function(stream) {
     stream.once('data', function() {
       process.stdin
              .pipe(createGrblSimulator(argv.interval || 1.0))
-             .pipe(throttle(50000))
+             .pipe(throttle(20000))
              .pipe(split()).on('data', function(d) {
         stream.write(d + '\r\n');
       });
@@ -27,7 +28,7 @@ if (typeof argv.i !== 'undefined') {
     });
   });
 
-  opener('http://localhost:' + port + '?skate=true');
+  opener('http://localhost:' + port + '?skate=true&diameter=' + (argv.diameter || 2.5));
 } else {
 
 }

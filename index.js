@@ -5,11 +5,12 @@ var ndfill = require('ndarray-fill');
 var split = require('split');
 var fc = require('fc');
 var domready = require('domready');
-
+var qs = require('querystring');
+var search = qs.parse(window.location.search.replace('?', ''));
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
-var cutterRadius = sim.scaleValue(sim.cutterRadius(1.25));
-sim.stockDimensions(70, 70, 12);
+var cutterRadius = sim.scaleValue(sim.cutterRadius(parseFloat(search.diameter || 1.25)/2));
+sim.stockDimensions(70, 70, 25);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -44,7 +45,7 @@ document.addEventListener('mousemove', function(ev) {
 
 
 
-if (window.location.search.indexOf('skate=true') > -1) {
+if (search.skate) {
   var numeric = function(a) {
     return typeof a === 'number';
   }
