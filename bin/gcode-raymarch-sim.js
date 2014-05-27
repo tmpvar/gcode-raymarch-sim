@@ -8,7 +8,7 @@ var createGrblSimulator = require('grbl-simulator');
 var opener = require('opener');
 var throttle = require('throttle');
 
-if (typeof argv.i !== 'undefined') {
+if (typeof argv.i) {
   var port = argv.port || 9870;
 
   process.stdin.pause();
