@@ -17,10 +17,45 @@ function GcodeRaymarchSimulator() {
   this._stockDimensions = [0,0,0];
   this._stockPosition = [0,0,0];
   this._cutterPosition = [0,0,0];
+
+  var worker = this.worker = new Worker('./simulator-worker.js');
+  worker.emit = function(type, data) {
+    worker.postMessage({
+      type: type,
+      data: data
+    });
+  };
+
+  worker.transfer = function(type, ab, obj) {
+    obj = obj || {};
+    obj.type = type;
+    obj.arrayBuffer = ab;
+
+    worker.postMessage(obj, [ab]);
+  };
+
+  var sim = this;
+
+  worker.onmessage = function(e) {
+    if (e.data.type === 'toolpath') {
+      var data = e.data;
+
+      var x = data.x;
+      var y = data.y;
+
+      sim.depthTexture.setPixels(
+        ndarray(
+          new Float32Array(e.data.arrayBuffer),
+          [data.width, data.height]
+        ),
+        x, y
+      );
+    }
+  }
 }
 
 GcodeRaymarchSimulator.prototype.init = function(gl) {
-
+  this._gl = gl;
   this.raymarchProgram = createRaymarchProgram(gl);
   this.raymarchProgram.bind();
 
@@ -49,7 +84,7 @@ GcodeRaymarchSimulator.prototype.init = function(gl) {
 
   this.depthTexture = createTexture(gl, this.depthArray);
 
-  this.depthTexture.bind('depth');
+  this.depthTexture.bind();
 }
 
 
@@ -82,21 +117,24 @@ GcodeRaymarchSimulator.prototype.render = function(gl, dt) {
 
 
 GcodeRaymarchSimulator.prototype.moveTool = function(x, y, z) {
-  var sx = this.scaleValue(x);
-  var sy = this.scaleValue(y);
+
+  var sy = this.scaleValue(x);
+  var sx = this.scaleValue(y);
   var sz = this.scaleValue(z);
 
-  var time = this.raymarchProgram.uniforms.time = Date.now()/1000;
+  var stockDimensions = this._stockDimensions;
+
+  this._cutterPosition = [sx, sy, sz].map(function(a, i) {
+    return a - stockDimensions[i]/2;
+  });
+
+  var time = Date.now()/1000;
 
   var ctime = Math.cos(time)/2;
   var stime = Math.sin(time)/2;
 
 
-  this._physicalCutterPosition = [x, y, z];
-  var stockDimensions = this._stockDimensions;
-  this._cutterPosition = [sx, sy, sz].map(function(a, i) {
-    return a - stockDimensions[i]/2;
-  });
+  this._physicalCutterPosition = [y, x, z];
 
   this._cutterPosition[2] = this._v + (-sz);
 
@@ -109,37 +147,16 @@ GcodeRaymarchSimulator.prototype.moveTool = function(x, y, z) {
   var ry = Math.round(sx * 2048);
   var rz = Math.round(sz * 2048);
 
-  var depthArray = this.depthArray
-                       .hi(rx+r, ry+r)
-                       .lo(rx-r, ry-r);
-
-  var r2 = r*2;
-
-  for(var i=0; i<r2; ++i) {
-    for(var j=0; j<r2; ++j) {
-      var orig = depthArray.get(i, j);
-      var map = this._tool.get(i, j);
-      if (map === 0 || isNaN(map)) {
-        continue;
-      }
-
-      var computed = this._v+(-sz)+map;
-
-      if (computed > orig) {
-        depthArray.set(i, j, computed);
-      }
-    }
-  }
-
-  this.depthTexture.setPixels(
-    depthArray,
-    Math.max(ry - r, 1),
-    Math.max(rx - r, 1)
-  );
+  this.worker.emit('move', [rx, ry, this._v + (-sz)]);
 };
 
 GcodeRaymarchSimulator.prototype.tool = function(ndarray) {
   this._tool = ndarray;
+
+  this.worker.transfer('tool', ndarray.data.buffer, {
+    width : ndarray._shape0,
+    height : ndarray._shape1
+  });
 };
 
 GcodeRaymarchSimulator.prototype.mouse = function(x, y) {
@@ -154,7 +171,7 @@ GcodeRaymarchSimulator.prototype.scale = function(units) {
 
 GcodeRaymarchSimulator.prototype.stockDimensions = function(x, y, z) {
   var scale = this._scale;
-  this._physicalStockDimensions = [x, y, z];
+  this._physicalStockDimensions = [y, x, z];
 
   this._stockDimensions = this._physicalStockDimensions.map(function(a) {
     return a/scale;
@@ -166,6 +183,7 @@ GcodeRaymarchSimulator.prototype.stockDimensions = function(x, y, z) {
 
   this._stockTop = this._stockDimensions[2] + this._stockPosition[2];
   this._v = this._stockPosition[2] - this._cutterRadius;
+  return [x, y, z];
 }
 
 GcodeRaymarchSimulator.prototype.scaleValue = function(units) {

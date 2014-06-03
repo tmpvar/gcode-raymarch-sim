@@ -1,7 +1,8 @@
 {
   "name": "gcode-raymarch-sim",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "beefy ./index.js:bundle.js --live --open -- -t glslify",
+    "dev": "beefy ./index.js:bundle.js --live --open -- -t glslify -t workerify",
     "build": "browserify index.js -o public/bundle.js -t glslify"
   },
   "dependencies": {
@@ -17,7 +18,9 @@
     "optimist": "^0.6.1",
     "split": "^0.3.0",
     "opener": "^1.3.0",
-    "throttle": "^1.0.3"
+    "throttle": "^1.0.3",
+    "ndarray-ops": "^1.2.2",
+    "cwise": "~0.3.4"
   },
   "bin": {
     "gcode-raymarch-sim": "bin/gcode-raymarch-sim.js"

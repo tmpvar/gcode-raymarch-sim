@@ -3,10 +3,9 @@ precision highp float;
 #endif
 
 #define M_PI 3.141593
-#define RAYMARCH_CYCLES 128
-#define RAYMARCH_PRECISION 0.0000001
+#define RAYMARCH_CYCLES 64
+#define RAYMARCH_PRECISION 0.0001
 
-uniform float time;
 uniform float depth_stride;
 uniform vec2 mouse;
 uniform vec2 resolution;
@@ -38,25 +37,25 @@ float solid_box(vec3 p, vec3 b) {
 }
 
 
-float pointseg_distance(in vec3 start, in vec3 end, in vec3 point) {
-  vec3 c = point - start; // Vector from a to Point
-  vec3 v = normalize(end - start); // Unit Vector from a to b
-  float d = length(end - start); // Length of the line segment
-  float t = dot(v, c);  // Intersection point Distance from a
+// float pointseg_distance(in vec3 start, in vec3 end, in vec3 point) {
+//   vec3 c = point - start; // Vector from a to Point
+//   vec3 v = normalize(end - start); // Unit Vector from a to b
+//   float d = length(end - start); // Length of the line segment
+//   float t = dot(v, c);  // Intersection point Distance from a
 
-  // Check to see if the point is on the line
-  // if not then return the endpoint
-  if(t < 0.0) {
-    return distance(start, point);
-  }
+//   // Check to see if the point is on the line
+//   // if not then return the endpoint
+//   if(t < 0.0) {
+//     return distance(start, point);
+//   }
 
-  if(t > d) {
-    return distance(end, point);
-  }
+//   if(t > d) {
+//     return distance(end, point);
+//   }
 
-  // move from point a to the nearest point on the segment
-  return distance(start + (v * t), point);
-}
+//   // move from point a to the nearest point on the segment
+//   return distance(start + (v * t), point);
+// }
 
 float solid_depthmap(vec3 p, float amount) {
   float r = 1.0/2048.0;
@@ -68,9 +67,9 @@ float solid_depthmap(vec3 p, float amount) {
   vec2 pos = floor(p.xy * 2048.0) / 2048.0;
   float depth = depth_get(p.xy + (stockPosition.xy - stockDimensions.xy/2.0));
 
-  if (depth == 0.0) {
-    return min(amount, RAYMARCH_PRECISION);
-  }
+  // if (depth == 0.0) {
+  //   return min(amount, RAYMARCH_PRECISION);
+  // }
 
   float d = r*10.0;//* 2.25;
 
@@ -116,7 +115,7 @@ vec2 map(in vec3 origin, in vec3 dir, in float amount) {
   );
 
   float cyl = solid_capsule(
-    pos - stockPosition - vec3(cutterPosition.xy, (stockDimensions.z - cutterRadius/2.0) - cutterPosition.z),
+    pos - stockPosition - vec3(cutterPosition.xy, (stockDimensions.z - cutterRadius/2.0) - cutterPosition.z) - vec3(cutterRadius, cutterRadius, 0.0),
     vec3(0.0, 0.0, 0.0),
     vec3(0.0, 0.0, 0.25),
     cutterRadius
@@ -154,6 +153,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     }
 
     if (t>maxd) {
+      m=-1.0;
       break;
     }
 
@@ -163,10 +163,6 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
     t += h * .75;//max(h * .25, -h);
     m = res.y;
 
-  }
-
-  if (t>maxd) {
-    m=-1.0;
   }
 
   return vec3(t, m, dot(t, m));

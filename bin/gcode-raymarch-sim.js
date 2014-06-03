@@ -22,8 +22,8 @@ if (typeof argv.i) {
              .pipe(createGrblSimulator(argv.interval || 1.0))
              .pipe(throttle(20000))
              .pipe(split()).on('data', function(d) {
-        stream.write(d + '\r\n');
-      });
+                stream.write(d + '\r\n');
+              });
       process.stdin.resume();
     });
   });

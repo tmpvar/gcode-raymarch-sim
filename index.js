@@ -10,7 +10,11 @@ var search = qs.parse(window.location.search.replace('?', ''));
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
 var cutterRadius = sim.scaleValue(sim.cutterRadius(parseFloat(search.diameter || 1.25)/2));
-sim.stockDimensions(70, 70, 25);
+var stockDimensions = sim.stockDimensions(
+  search.stockWidth || 50,
+  search.stockHeight || 50,
+  search.stockDepth || 30
+);
 
 var r = Math.floor(cutterRadius / sim._ratio);
 var r2 = r*2;
@@ -43,8 +47,6 @@ document.addEventListener('mousemove', function(ev) {
   sim.mouse(ev.clientX, ev.clientY);
 });
 
-
-
 if (search.skate) {
   var numeric = function(a) {
     return typeof a === 'number';
@@ -68,8 +70,8 @@ if (search.skate) {
   setInterval(function() {
     cz -= 0.001;
     var time = Date.now()/1000;
-    var cx = 20 + Math.sin(time)*10;
-    var cy = 20 + Math.cos(time)*10;
+    var cx = stockDimensions[0]/2 + Math.sin(time)*stockDimensions[0]/2;
+    var cy = stockDimensions[1]/2 + Math.cos(time)*stockDimensions[1]/2;
     sim.moveTool(cx, cy, cz)
   }, 0);
 }
