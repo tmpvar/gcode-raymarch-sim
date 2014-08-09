@@ -3,6 +3,8 @@
 This is an experiment to test the viability of visualizing material removal
 in the context of a 2.5 cnc milling machine.
 
+![gcode-raymarch-sim](screen.png)
+
 This approach could probably be used for FDM 3d printing as well, but that
 is not my primary focus at this time.
 
