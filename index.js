@@ -68,7 +68,41 @@ if (search.skate) {
   }, 0);
 }
 
+
+var panSpeed = .01;
+var panScratch = [0, 0, 0]
 var gl = fc(function(dt) {
+
+  panScratch[0] = 0
+  panScratch[1] = 0
+  panScratch[2] = 0
+
+  var update = false
+
+  if (keyboard[37]) {
+    panScratch[0] = -panSpeed
+    update = true
+  }
+
+  if (keyboard[38]) {
+    panScratch[1] = -panSpeed
+    update = true
+  }
+
+  if (keyboard[39]) {
+    panScratch[0] = panSpeed
+    update = true
+  }
+
+  if (keyboard[40]) {
+    panScratch[1] = panSpeed
+    update = true
+  }
+
+
+  update && sim._camera.pan(panScratch);
+  updateCamera()
+
   sim.render(gl, dt);
 }, true, 3);
 
@@ -81,6 +115,8 @@ var mouse = {
   far: [0, 0, 0],
   pick: [0, 0]
 };
+
+var keyboard = {}
 
 var m4scratch = mat4.create();
 function getEye(out, view) {
@@ -158,43 +194,25 @@ function handleMouse(e) {
 
       mouse.pos[0] = x;
       mouse.pos[1] = y;
-
-      updateCamera();
     break;
 
     case 'mousewheel':
       sim._camera.zoom(e.wheelDeltaY * -.001);
       e.preventDefault();
-      updateCamera();
     break;
 
     // TODO: eliminate new array creation below
+    case 'keyup':
+      keyboard[e.keyCode] = false
+    break;
+
     case 'keydown' :
-      var panSpeed = .01;
-      switch (e.keyCode) {
-        case 37:
-          sim._camera.pan([-panSpeed, 0, 0]);
-        break;
-
-        case 38:
-          sim._camera.pan([0, -panSpeed, 0]);
-        break;
-
-        case 39:
-          sim._camera.pan([panSpeed, 0, 0]);
-        break;
-
-        case 40:
-          sim._camera.pan([0, panSpeed, 0]);
-        break;
-      }
-
-      updateCamera()
+      keyboard[e.keyCode] = true
     break;
   }
 }
 
-['mousedown', 'mouseup', 'mousemove', 'mousewheel', 'keydown'].forEach(function(name) {
+['mousedown', 'mouseup', 'mousemove', 'mousewheel', 'keydown', 'keyup'].forEach(function(name) {
   document.addEventListener(name, handleMouse);
 });
 
