@@ -37,7 +37,6 @@ var handlers = {
       width: data.width,
       height: data.height
     };
-
     tool = ndarray(
       new Float32Array(data.arrayBuffer),
       [data.width, data.height]

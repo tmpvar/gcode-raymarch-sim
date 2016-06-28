@@ -1,11 +1,12 @@
-var glslify = require('glslify');
+var createShader = require('gl-shader');
 var ndarray = require('ndarray');
 var createTexture = require('gl-texture2d');
+var createCamera = require('orbit-camera')
+var mat4 = require('gl-mat4');
+var fs = require('fs')
 
-var createRaymarchProgram = glslify({
-  vertex: './shaders/raymarch.vert',
-  fragment: './shaders/raymarch.frag'
-});
+var fragmentShader = fs.readFileSync(__dirname + '/shaders/raymarch.vert', 'utf-8')
+var vertexShader = fs.readFileSync(__dirname + '/shaders/raymarch.frag', 'utf-8')
 
 function GcodeRaymarchSimulator() {
   this._mouse = [];
@@ -17,6 +18,9 @@ function GcodeRaymarchSimulator() {
   this._stockDimensions = [0,0,0];
   this._stockPosition = [0,0,0];
   this._cutterPosition = [0,0,0];
+
+  this._invMVP = mat4.create()
+  this._uvmatrix = mat4.create()
 
   var worker = this.worker = new Worker('./simulator-worker.js');
   worker.emit = function(type, data) {
@@ -56,7 +60,25 @@ function GcodeRaymarchSimulator() {
 
 GcodeRaymarchSimulator.prototype.init = function(gl) {
   this._gl = gl;
-  this.raymarchProgram = createRaymarchProgram(gl);
+
+  this.raymarchProgram = createShader(
+    gl,
+    fragmentShader,
+    vertexShader
+  );
+
+  this._eye = [
+    0,
+    0,
+    3
+  ];
+
+  this._camera = createCamera(
+    this._eye.concat(),
+    [0.25, 0.25, 0],
+    [0, 1, 0]
+  );
+
   this.raymarchProgram.bind();
 
   this.buffer = gl.createBuffer();
@@ -101,16 +123,14 @@ GcodeRaymarchSimulator.prototype.render = function(gl, dt) {
     gl.drawingBufferHeight
   ];
 
-  this.raymarchProgram.uniforms.mouse = this._mouse;
   this.raymarchProgram.uniforms.cutterPosition = this._cutterPosition;
-
-
   this.raymarchProgram.uniforms.cutterRadius = this._cutterRadius;
-
   this.raymarchProgram.uniforms.stockDimensions = this._stockDimensions;
   this.raymarchProgram.uniforms.stockPosition = this._stockPosition;
   this.raymarchProgram.uniforms.stockTop = this._stockTop;
-
+  this.raymarchProgram.uniforms.eye = this._eye;
+  this.raymarchProgram.uniforms.uvmatrix = this._uvmatrix;
+  this.raymarchProgram.uniforms.invMVP = this._invMVP;
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
@@ -154,14 +174,9 @@ GcodeRaymarchSimulator.prototype.tool = function(ndarray) {
   this._tool = ndarray;
 
   this.worker.transfer('tool', ndarray.data.buffer, {
-    width : ndarray._shape0,
-    height : ndarray._shape1
+    width : ndarray.shape[0],
+    height : ndarray.shape[1]
   });
-};
-
-GcodeRaymarchSimulator.prototype.mouse = function(x, y) {
-  this._mouse[0] = x;
-  this._mouse[1] = y;
 };
 
 GcodeRaymarchSimulator.prototype.scale = function(units) {

@@ -4,7 +4,7 @@ var ndarray = require('ndarray');
 var ndfill = require('ndarray-fill');
 var split = require('split');
 var fc = require('fc');
-var domready = require('domready');
+var mat4 = require('gl-mat4');
 var qs = require('querystring');
 var search = qs.parse(window.location.search.replace('?', ''));
 var sim = window.simulator = new GcodeRaymarchSimulator();
@@ -39,14 +39,6 @@ ndfill(tool, function(i, j) {
   return (Math.sqrt(dz * dz - l * l) / r) * cutterRadius;
 });
 
-
-sim.tool(tool);
-
-sim.mouse(0, window.innerHeight);
-document.addEventListener('mousemove', function(ev) {
-  sim.mouse(ev.clientX, ev.clientY);
-});
-
 if (search.skate) {
   var numeric = function(a) {
     return typeof a === 'number';
@@ -76,12 +68,135 @@ if (search.skate) {
   }, 0);
 }
 
-domready(function() {
-  var gl = fc(function(dt) {
-    sim.render(gl, dt);
-  }, false, 3);
+var gl = fc(function(dt) {
+  sim.render(gl, dt);
+}, true, 3);
 
-  sim.init(gl);
+sim.init(gl);
+sim.tool(tool);
 
-  gl.start();
+var mouse = {
+  down: false,
+  pos: [0, 0],
+  far: [0, 0, 0],
+  pick: [0, 0]
+};
+
+var m4scratch = mat4.create();
+function getEye(out, view) {
+  mat4.invert(m4scratch, view);
+  out[0] = m4scratch[12];
+  out[1] = m4scratch[13];
+  out[2] = m4scratch[14]
+  return out;
+}
+
+var v2scratch = [0, 0]
+var v2scratch2 = [0,0]
+var model = mat4.create()
+var view = mat4.create()
+var projection = mat4.create()
+var worldToClip = mat4.create()
+
+function updateCamera () {
+  var w = gl.canvas.width;
+  var h = gl.canvas.height;
+
+  sim._camera.view(view);
+
+  getEye(sim._eye, view);
+
+  mat4.identity(model);
+  mat4.identity(worldToClip);
+  mat4.identity(sim._invMVP);
+
+  mat4.perspective(
+    projection,
+    Math.PI/4.0,
+    w/h,
+    0.1,
+    1000.0
+  );
+
+  mat4.multiply(worldToClip, projection, view);
+  mat4.copy(sim._uvmatrix, view)
+  mat4.invert(sim._invMVP, worldToClip);
+  mat4.multiply(sim._invMVP, sim._invMVP, projection);
+}
+
+function handleMouse(e) {
+
+  // gl.start();
+  //scene.dirty();
+
+  switch (e.type) {
+    case 'mousedown':
+      mouse.down = true;
+    break;
+
+    case 'mouseup':
+      mouse.down = false;
+    break;
+
+    case 'mousemove':
+      var x = e.clientX;
+      var y = e.clientY;
+      var w = gl.canvas.width;
+      var h = gl.canvas.height;
+
+      if (mouse.down) {
+
+        var l = mouse.pos;
+
+        v2scratch[0] = x/w - .5;
+        v2scratch[1] = y/h - .5;
+        v2scratch2[0] = l[0]/w - .5;
+        v2scratch2[1] = l[1]/h - .5;
+
+        sim._camera.rotate(v2scratch, v2scratch2);
+      }
+
+      mouse.pos[0] = x;
+      mouse.pos[1] = y;
+
+      updateCamera();
+    break;
+
+    case 'mousewheel':
+      sim._camera.zoom(e.wheelDeltaY * -.001);
+      e.preventDefault();
+      updateCamera();
+    break;
+
+    // TODO: eliminate new array creation below
+    case 'keydown' :
+      var panSpeed = .01;
+      switch (e.keyCode) {
+        case 37:
+          sim._camera.pan([-panSpeed, 0, 0]);
+        break;
+
+        case 38:
+          sim._camera.pan([0, -panSpeed, 0]);
+        break;
+
+        case 39:
+          sim._camera.pan([panSpeed, 0, 0]);
+        break;
+
+        case 40:
+          sim._camera.pan([0, panSpeed, 0]);
+        break;
+      }
+
+      updateCamera()
+    break;
+  }
+}
+
+['mousedown', 'mouseup', 'mousemove', 'mousewheel', 'keydown'].forEach(function(name) {
+  document.addEventListener(name, handleMouse);
 });
+
+
+

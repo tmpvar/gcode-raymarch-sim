@@ -3,13 +3,15 @@ precision highp float;
 #endif
 
 #define M_PI 3.141593
-#define RAYMARCH_CYCLES 64
+#define RAYMARCH_CYCLES 96
 #define RAYMARCH_PRECISION 0.0001
 
 uniform float depth_stride;
 uniform vec2 mouse;
 uniform vec2 resolution;
 uniform sampler2D depth;
+
+uniform vec3 eye;
 
 uniform vec3 cutterPosition;
 uniform float cutterRadius;
@@ -18,6 +20,9 @@ uniform float cutterRadius;
 uniform vec3 stockDimensions;
 uniform vec3 stockPosition;
 uniform float stockTop;
+
+uniform mat4 invMVP;
+varying vec3 v_dir;
 
 float depth_get(in vec2 uv) {
   return texture2D(depth, uv).x;
@@ -170,7 +175,7 @@ vec3 castRay(in vec3 ro, in vec3 rd, in float maxd) {
 
 vec3 render(in vec3 ro, in vec3 rd) {
   vec3 col = vec3(0.0);
-  vec3 res = castRay(ro,rd,5.0);
+  vec3 res = castRay(ro, rd, 100.0);
 
   float t = res.x;
   float m = res.y;
@@ -180,25 +185,26 @@ vec3 render(in vec3 ro, in vec3 rd) {
 
 void main(void)
 {
-  vec2 q = gl_FragCoord.xy/resolution.xy;
-  vec2 p = -1.0+2.0*q;
-  p.x *= resolution.x/resolution.y;
-  vec2 mo = mouse.xy/resolution.xy;
+  // vec2 q = gl_FragCoord.xy/resolution.xy;
+  // vec2 p = -1.0+2.0*q;
+  // p.x *= resolution.x/resolution.y;
+  // vec2 mo = mouse.xy/resolution.xy;
 
 
   // camera
-  vec3 ro = vec3(1.0 + sin(6.0 * mo.x), 0.0, 3.0 * mo.y);
-  vec3 ta = vec3(0.0, 0.0, 0.0);//vec3( -0.5, -0.2, 0.5 );
+  // vec3 ro = vec3(1.0 + sin(6.0 * mo.x), 0.0, 3.0 * mo.y);
+  // vec3 ta = vec3(0.0, 0.0, 0.0);//vec3( -0.5, -0.2, 0.5 );
 
-  // camera tx
-  vec3 cw = normalize( ta-ro );
-  vec3 cp = vec3( 0.0, 0.0, 1.0 );
-  vec3 cu = normalize( cross(cw,cp) );
-  vec3 cv = normalize( cross(cu,cw) );
-  vec3 rd = normalize( p.x*cu + p.y*cv + 2.5*cw );
+  // // camera tx
+  // vec3 cw = normalize( ta-ro );
+  // vec3 cp = vec3( 0.0, 0.0, 1.0 );
+  // vec3 cu = normalize( cross(cw,cp) );
+  // vec3 cv = normalize( cross(cu,cw) );
+  // vec3 rd = normalize( p.x*cu + p.y*cv + 2.5*cw );
 
+  vec3 ro = invMVP[3].xyz / invMVP[3].w;
 
-  vec3 col = render( ro, rd );
+  vec3 col = render( ro, normalize(v_dir) );
   /*
   float qd = depth_get(p);
   if (qd > 0.0) {
