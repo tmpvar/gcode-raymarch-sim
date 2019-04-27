@@ -6,6 +6,7 @@ var split = require('split');
 var fc = require('fc');
 var mat4 = require('gl-mat4');
 var qs = require('querystring');
+var input = require('./input')
 var search = qs.parse(window.location.search.replace('?', ''));
 var sim = window.simulator = new GcodeRaymarchSimulator();
 
@@ -79,44 +80,49 @@ var gl = fc(function(dt) {
 
   var update = false
 
-  if (keyboard[37]) {
+  if (input.keyboard[37]) {
     panScratch[0] = -panSpeed
     update = true
   }
 
-  if (keyboard[38]) {
+  if (input.keyboard[38]) {
     panScratch[1] = -panSpeed
     update = true
   }
 
-  if (keyboard[39]) {
+  if (input.keyboard[39]) {
     panScratch[0] = panSpeed
     update = true
   }
 
-  if (keyboard[40]) {
+  if (input.keyboard[40]) {
     panScratch[1] = panSpeed
     update = true
   }
 
+  if (input.mouse.down) {
+    var w = gl.canvas.width;
+    var h = gl.canvas.height;
+
+    v2scratch[0] = 2.0 * input.mouse.downPos[0]/w - 1.0;
+    v2scratch[1] = 2.0 * input.mouse.downPos[1]/h - 1.0;
+    v2scratch2[0] = 2.0 * input.mouse.lastDownPos[0]/w - 1.0;
+    v2scratch2[1] = 2.0 * input.mouse.lastDownPos[1]/h - 1.0;
+
+    sim._camera.rotate(v2scratch, v2scratch2);
+  }
+
+  sim._camera.zoom((input.mouse.zoom - input.mouse.lastZoom) * -.001);
 
   update && sim._camera.pan(panScratch);
   updateCamera()
 
   sim.render(gl, dt);
+  input.tick()
 }, true, 3);
 
 sim.init(gl);
 sim.tool(tool);
-
-var mouse = {
-  down: false,
-  pos: [0, 0],
-  far: [0, 0, 0],
-  pick: [0, 0]
-};
-
-var keyboard = {}
 
 var m4scratch = mat4.create();
 function getEye(out, view) {
@@ -159,62 +165,3 @@ function updateCamera () {
   mat4.invert(sim._invMVP, worldToClip);
   mat4.multiply(sim._invMVP, sim._invMVP, projection);
 }
-
-function handleMouse(e) {
-
-  // gl.start();
-  //scene.dirty();
-
-  switch (e.type) {
-    case 'mousedown':
-      mouse.down = true;
-    break;
-
-    case 'mouseup':
-      mouse.down = false;
-    break;
-
-    case 'mousemove':
-      var x = e.clientX;
-      var y = e.clientY;
-      var w = gl.canvas.width;
-      var h = gl.canvas.height;
-
-      if (mouse.down) {
-
-        var l = mouse.pos;
-
-        v2scratch[0] = x/w - .5;
-        v2scratch[1] = y/h - .5;
-        v2scratch2[0] = l[0]/w - .5;
-        v2scratch2[1] = l[1]/h - .5;
-
-        sim._camera.rotate(v2scratch, v2scratch2);
-      }
-
-      mouse.pos[0] = x;
-      mouse.pos[1] = y;
-    break;
-
-    case 'mousewheel':
-      sim._camera.zoom(e.wheelDeltaY * -.001);
-      e.preventDefault();
-    break;
-
-    // TODO: eliminate new array creation below
-    case 'keyup':
-      keyboard[e.keyCode] = false
-    break;
-
-    case 'keydown' :
-      keyboard[e.keyCode] = true
-    break;
-  }
-}
-
-['mousedown', 'mouseup', 'mousemove', 'mousewheel', 'keydown', 'keyup'].forEach(function(name) {
-  document.addEventListener(name, handleMouse);
-});
-
-
-
