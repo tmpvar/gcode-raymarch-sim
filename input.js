@@ -13,8 +13,8 @@ var keyboard = module.exports.keyboard = {}
 
 module.exports.tick = function() {
   mouse.lastZoom = mouse.zoom;
-  mouse.downPos[0] = mouse.lastDownPos[0];
-  mouse.downPos[1] = mouse.lastDownPos[1];
+  mouse.lastDownPos[0] = mouse.downPos[0];
+  mouse.lastDownPos[1] = mouse.downPos[1];
 }
 
 function handleInput(e, dirtyCallback) {

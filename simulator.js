@@ -75,7 +75,7 @@ GcodeRaymarchSimulator.prototype.init = function(gl) {
 
   this._camera = createCamera(
     this._eye.concat(),
-    [0.25, 0.25, 0],
+    [0.25, 0.25, 0.125],
     [0, 1, 0]
   );
 

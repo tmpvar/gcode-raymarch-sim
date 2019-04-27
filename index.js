@@ -104,8 +104,8 @@ var gl = fc(function(dt) {
     var w = gl.canvas.width;
     var h = gl.canvas.height;
 
-    v2scratch[0] = 2.0 * input.mouse.downPos[0]/w - 1.0;
-    v2scratch[1] = 2.0 * input.mouse.downPos[1]/h - 1.0;
+    v2scratch[0]  = 2.0 * input.mouse.downPos[0]/w - 1.0;
+    v2scratch[1]  = 2.0 * input.mouse.downPos[1]/h - 1.0;
     v2scratch2[0] = 2.0 * input.mouse.lastDownPos[0]/w - 1.0;
     v2scratch2[1] = 2.0 * input.mouse.lastDownPos[1]/h - 1.0;
 
